@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rhombus AI - File Manager & Data Browser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 18px;
+        }
+
+        .upload-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 2px dashed #667eea;
+            transition: all 0.3s;
+        }
+
+        .upload-section:hover {
+            border-color: #764ba2;
+            background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        }
+
+        .upload-area {
+            text-align: center;
+            padding: 50px;
+            border: 3px dashed #ddd;
+            border-radius: 12px;
+            background: white;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+            transform: translateY(-2px);
+        }
+
+        .upload-area.drag-over {
+            border-color: #28a745;
+            background: #f0fff4;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 64px;
+            color: #667eea;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .upload-text {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .upload-subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .file-types {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .file-type {
+            background: #667eea;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-info {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 300px;
+            padding: 12px 20px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .filter-select {
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            min-width: 150px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+        }
+
+        .data-container {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .data-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .data-stats {
+            display: flex;
+            gap: 30px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .table-container {
+            max-height: 600px;
+            overflow: auto;
+            border: 1px solid #dee2e6;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .data-table thead th {
+            background: #f8f9fa;
+            color: #333;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .data-table th.sortable {
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .data-table th.sortable:hover {
+            background: #e9ecef;
+        }
+
+        .data-table th.sort-asc::after {
+            content: ' ↑';
+            color: #667eea;
+        }
+
+        .data-table th.sort-desc::after {
+            content: ' ↓';
+            color: #667eea;
+        }
+
+        .data-table tbody td {
+            padding: 12px;
+            border-bottom: 1px solid #f1f3f4;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .data-table tbody tr.highlight {
+            background: #fff3cd !important;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .page-btn {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .page-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error, .success {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .cell-preview {
+            max-width: 300px;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 60px;
+            color: #666;
+            font-size: 18px;
+        }
+
+        .export-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .controls-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                min-width: auto;
+            }
+
+            .data-stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .table-container {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📁 File Manager & Data Browser</h1>
+            <p>Upload, preview, search and manage your data files</p>
+        </div>
+
+        <!-- File Upload Section -->
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">Drop your files here or click to browse</div>
+                <div class="upload-subtitle">Upload CSV, Excel, JSON, TSV, and more data files</div>
+                <div class="file-types">
+                    <span class="file-type">CSV</span>
+                    <span class="file-type">XLSX</span>
+                    <span class="file-type">JSON</span>
+                    <span class="file-type">TSV</span>
+                    <span class="file-type">TXT</span>
+                </div>
+                <input type="file" id="fileInput" class="file-input"
+                       accept=".csv,.xlsx,.xls,.json,.tsv,.txt,.xml">
+            </div>
+            <div class="file-info" id="fileInfo"></div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p>Processing your file...</p>
+        </div>
+
+        <!-- Controls Section -->
+        <div class="controls" id="controls">
+            <div class="controls-row">
+                <input type="text" id="searchInput" class="search-box"
+                       placeholder="🔍 Search in all columns...">
+
+                <select id="columnFilter" class="filter-select">
+                    <option value="">All Columns</option>
+                </select>
+
+                <select id="rowsPerPage" class="filter-select">
+                    <option value="25">25 rows</option>
+                    <option value="50">50 rows</option>
+                    <option value="100">100 rows</option>
+                    <option value="500">500 rows</option>
+                </select>
+
+                <button class="btn" onclick="exportData('csv')">📥 Export CSV</button>
+                <button class="btn btn-secondary" onclick="clearData()">🗑️ Clear</button>
+            </div>
+        </div>
+
+        <!-- Data Container -->
+        <div class="data-container" id="dataContainer">
+            <div class="data-header">
+                <h3 id="fileName">Data Preview</h3>
+                <div class="data-stats">
+                    <div class="stat">
+                        <span class="stat-number" id="totalRows">0</span>
+                        <span class="stat-label">Total Rows</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number" id="totalColumns">0</span>
+                        <span class="stat-label">Columns</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number" id="filteredRows">0</span>
+                        <span class="stat-label">Filtered Rows</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table" id="dataTable">
+                    <thead id="tableHead"></thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+
+                <div class="no-data" id="noData" style="display: none;">
+                    <p>📄 No data matches your search criteria</p>
+                </div>
+            </div>
+
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+
+    <script>
+        let originalData = [];
+        let filteredData = [];
+        let currentPage = 1;
+        let rowsPerPage = 25;
+        let sortColumn = null;
+        let sortDirection = 'asc';
+        let columns = [];
+        let fileName = '';
+
+        // File upload handling
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // Search and filter handling
+        document.getElementById('searchInput').addEventListener('input', handleSearch);
+        document.getElementById('columnFilter').addEventListener('change', handleSearch);
+        document.getElementById('rowsPerPage').addEventListener('change', handleRowsPerPageChange);
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                processFile(file);
+            }
+        }
+
+        async function processFile(file) {
+            fileName = file.name;
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Show file info
+            document.getElementById('fileInfo').innerHTML = `
+                <strong>📄 File:</strong> ${file.name}
+                <strong>📏 Size:</strong> ${(file.size / 1024).toFixed(1)} KB
+                <strong>📅 Modified:</strong> ${new Date(file.lastModified).toLocaleDateString()}
+            `;
+            document.getElementById('fileInfo').style.display = 'block';
+
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            hideDataContainer();
+
+            try {
+                const response = await fetch('/api/upload-file/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    originalData = data.data;
+                    columns = data.columns;
+                    initializeDataView();
+                    showSuccess(`✅ Successfully loaded ${data.row_count} rows and ${data.columns.length} columns`);
+                } else {
+                    showError('Upload failed: ' + data.error);
+                }
+
+            } catch (error) {
+                showError('Upload failed: ' + error.message);
+            }
+
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function initializeDataView() {
+            filteredData = [...originalData];
+            currentPage = 1;
+
+            // Update file name
+            document.getElementById('fileName').textContent = fileName;
+
+            // Setup column filter
+            setupColumnFilter();
+
+            // Update stats
+            updateStats();
+
+            // Render table
+            renderTable();
+
+            // Show controls and data container
+            document.getElementById('controls').style.display = 'block';
+            document.getElementById('dataContainer').style.display = 'block';
+        }
+
+        function setupColumnFilter() {
+            const columnFilter = document.getElementById('columnFilter');
+            columnFilter.innerHTML = '<option value="">All Columns</option>';
+
+            columns.forEach(col => {
+                const option = document.createElement('option');
+                option.value = col;
+                option.textContent = col;
+                columnFilter.appendChild(option);
+            });
+        }
+
+        function handleSearch() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const selectedColumn = document.getElementById('columnFilter').value;
+
+            if (!searchTerm) {
+                filteredData = [...originalData];
+            } else {
+                filteredData = originalData.filter(row => {
+                    if (selectedColumn) {
+                        // Search in specific column
+                        const value = row[selectedColumn];
+                        return value && value.toString().toLowerCase().includes(searchTerm);
+                    } else {
+                        // Search in all columns
+                        return columns.some(col => {
+                            const value = row[col];
+                            return value && value.toString().toLowerCase().includes(searchTerm);
+                        });
+                    }
+                });
+            }
+
+            currentPage = 1;
+            updateStats();
+            renderTable();
+        }
+
+        function handleRowsPerPageChange() {
+            rowsPerPage = parseInt(document.getElementById('rowsPerPage').value);
+            currentPage = 1;
+            renderTable();
+        }
+
+        function sortTable(column) {
+            if (sortColumn === column) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = column;
+                sortDirection = 'asc';
+            }
+
+            filteredData.sort((a, b) => {
+                let aVal = a[column] || '';
+                let bVal = b[column] || '';
+
+                // Try to parse as numbers
+                const aNum = parseFloat(aVal);
+                const bNum = parseFloat(bVal);
+
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    return sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+                }
+
+                // String comparison
+                aVal = aVal.toString().toLowerCase();
+                bVal = bVal.toString().toLowerCase();
+
+                if (sortDirection === 'asc') {
+                    return aVal.localeCompare(bVal);
+                } else {
+                    return bVal.localeCompare(aVal);
+                }
+            });
+
+            renderTable();
+        }
+
+        function renderTable() {
+            const tableHead = document.getElementById('tableHead');
+            const tableBody = document.getElementById('tableBody');
+            const noData = document.getElementById('noData');
+
+            if (filteredData.length === 0) {
+                tableHead.innerHTML = '';
+                tableBody.innerHTML = '';
+                noData.style.display = 'block';
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            noData.style.display = 'none';
+
+            // Render header
+            let headerHTML = '<tr>';
+            columns.forEach(col => {
+                const sortClass = sortColumn === col ? `sort-${sortDirection}` : '';
+                headerHTML += `
+                    <th class="sortable ${sortClass}" onclick="sortTable('${col}')">
+                        ${col}
+                    </th>
+                `;
+            });
+            headerHTML += '</tr>';
+            tableHead.innerHTML = headerHTML;
+
+            // Calculate pagination
+            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, filteredData.length);
+            const pageData = filteredData.slice(startIndex, endIndex);
+
+            // Render body
+            let bodyHTML = '';
+            pageData.forEach(row => {
+                bodyHTML += '<tr>';
+                columns.forEach(col => {
+                    const value = row[col] || '';
+                    const displayValue = value.toString().length > 50
+                        ? value.toString().substring(0, 50) + '...'
+                        : value;
+                    bodyHTML += `<td title="${escapeHtml(value)}">${escapeHtml(displayValue)}</td>`;
+                });
+                bodyHTML += '</tr>';
+            });
+            tableBody.innerHTML = bodyHTML;
+
+            // Render pagination
+            renderPagination(totalPages);
+        }
+
+        function renderPagination(totalPages) {
+            const pagination = document.getElementById('pagination');
+
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '';
+
+            // Previous button
+            paginationHTML += `
+                <button class="page-btn" ${currentPage === 1 ? 'disabled' : ''}
+                        onclick="changePage(${currentPage - 1})">
+                    ← Previous
+                </button>
+            `;
+
+            // Page numbers
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, currentPage + 2);
+
+            if (startPage > 1) {
+                paginationHTML += `<button class="page-btn" onclick="changePage(1)">1</button>`;
+                if (startPage > 2) {
+                    paginationHTML += `<span>...</span>`;
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHTML += `
+                    <button class="page-btn ${i === currentPage ? 'active' : ''}"
+                            onclick="changePage(${i})">
+                        ${i}
+                    </button>
+                `;
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    paginationHTML += `<span>...</span>`;
+                }
+                paginationHTML += `<button class="page-btn" onclick="changePage(${totalPages})">${totalPages}</button>`;
+            }
+
+            // Next button
+            paginationHTML += `
+                <button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''}
+                        onclick="changePage(${currentPage + 1})">
+                    Next →
+                </button>
+            `;
+
+            pagination.innerHTML = paginationHTML;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderTable();
+        }
+
+        function updateStats() {
+            document.getElementById('totalRows').textContent = originalData.length;
+            document.getElementById('totalColumns').textContent = columns.length;
+            document.getElementById('filteredRows').textContent = filteredData.length;
+        }
+
+        function exportData(format) {
+            if (!filteredData.length) return;
+
+            let content, mimeType, filename;
+
+            if (format === 'csv') {
+                content = convertToCSV(filteredData);
+                mimeType = 'text/csv';
+                filename = fileName.replace(/\.[^/.]+$/, '') + '_filtered.csv';
+            }
+
+            const blob = new Blob([content], { type: mimeType });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            showSuccess(`✅ Exported ${filteredData.length} rows to ${filename}`);
+        }
+
+        function convertToCSV(data) {
+            if (!data || data.length === 0) return '';
+
+            const csvRows = [columns.join(',')];
+
+            data.forEach(row => {
+                const values = columns.map(col => {
+                    const value = row[col] || '';
+                    return `"${value.toString().replace(/"/g, '""')}"`;
+                });
+                csvRows.push(values.join(','));
+            });
+
+            return csvRows.join('\n');
+        }
+
+        function clearData() {
+            if (confirm('Are you sure you want to clear all data?')) {
+                originalData = [];
+                filteredData = [];
+                columns = [];
+                hideDataContainer();
+                document.getElementById('fileInfo').style.display = 'none';
+                document.getElementById('fileInput').value = '';
+                document.getElementById('searchInput').value = '';
+            }
+        }
+
+        function hideDataContainer() {
+            document.getElementById('controls').style.display = 'none';
+            document.getElementById('dataContainer').style.display = 'none';
+        }
+
+        function showError(message) {
+            removeMessages();
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.innerHTML = `<strong>❌ Error:</strong> ${message}`;
+            document.querySelector('.container').appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+
+        function showSuccess(message) {
+            removeMessages();
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success';
+            successDiv.innerHTML = message;
+            document.querySelector('.container').appendChild(successDiv);
+            setTimeout(() => successDiv.remove(), 3000);
+        }
+
+        function removeMessages() {
+            document.querySelectorAll('.error, .success').forEach(el => el.remove());
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>
