@@ -5,6 +5,7 @@ from django.shortcuts import redirect
 def home_redirect(request):
     return redirect('/api/demo/')
 
+
 urlpatterns = [
     path('', home_redirect, name='home'),
     path('admin/', admin.site.urls),
