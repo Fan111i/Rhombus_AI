@@ -1,11 +1,15 @@
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-u7we#%__k%k_9rh3gy0psm3l8o@1eb1yn=0_78@a&e$zhe%l-)'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-u7we#%__k%k_9rh3gy0psm3l8o@1eb1yn=0_78@a&e$zhe%l-)')
 
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = []
 
@@ -100,3 +104,6 @@ REST_FRAMEWORK = {
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+HUGGINGFACE_API_KEY = os.getenv('HUGGINGFACE_API_KEY')
