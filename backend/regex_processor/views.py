@@ -9,12 +9,13 @@ import json
 @api_view(['POST'])
 def convert_to_regex(request):
     """
-    Convert natural language description to regex pattern
+    Convert natural language description to regex pattern with enhanced intelligence
     """
     try:
         data = request.data
         description = data.get('description', '').strip()
         context = data.get('context', '')
+        column_data = data.get('column_data', None)
 
         if not description:
             return Response({
@@ -22,19 +23,124 @@ def convert_to_regex(request):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         llm_service = LLMService()
-        result = llm_service.natural_language_to_regex(description, context)
+        result = llm_service.natural_language_to_regex(description, context, column_data)
 
         if result['success']:
-            return Response({
+            response_data = {
                 'success': True,
                 'pattern': result['pattern'],
-                'description': result['description']
-            })
+                'description': result['description'],
+                'source': result.get('source', 'unknown')
+            }
+
+            # Add explanation if available
+            if 'explanation' in result:
+                response_data['explanation'] = result['explanation']
+
+            return Response(response_data)
         else:
             return Response({
                 'success': False,
-                'error': result['error']
+                'error': result.get('error', 'Failed to generate regex pattern')
             }, status=status.HTTP_400_BAD_REQUEST)
+
+    except Exception as e:
+        return Response({
+            'error': f'Server error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+def analyze_column(request):
+    """
+    Analyze column data to provide intelligent insights and pattern suggestions
+    """
+    try:
+        data = request.data
+        column_data = data.get('column_data', [])
+        column_name = data.get('column_name', 'column')
+
+        if not column_data:
+            return Response({
+                'error': 'Column data is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        llm_service = LLMService()
+        analysis = llm_service.analyze_column_data(column_data, column_name)
+
+        return Response({
+            'success': True,
+            'analysis': analysis
+        })
+
+    except Exception as e:
+        return Response({
+            'error': f'Server error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+def test_regex_pattern(request):
+    """
+    Test regex pattern on sample data
+    """
+    try:
+        data = request.data
+        pattern = data.get('pattern', '').strip()
+        sample_data = data.get('sample_data', [])
+        replacement = data.get('replacement', '[MATCH]')
+
+        if not pattern:
+            return Response({
+                'error': 'Pattern is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if not sample_data:
+            return Response({
+                'error': 'Sample data is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        llm_service = LLMService()
+        test_result = llm_service.test_regex_on_sample(pattern, sample_data, replacement)
+
+        return Response(test_result)
+
+    except Exception as e:
+        return Response({
+            'error': f'Server error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+def natural_language_query(request):
+    """
+    Process natural language queries on data (like SQL but in natural language)
+    """
+    try:
+        data = request.data
+        query = data.get('query', '').strip()
+        dataset = data.get('data', [])
+        columns = data.get('columns', [])
+
+        if not query:
+            return Response({
+                'error': 'Query is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if not dataset:
+            return Response({
+                'error': 'Data is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if not columns:
+            return Response({
+                'error': 'Columns are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        llm_service = LLMService()
+        query_result = llm_service.natural_language_query(query, dataset, columns)
+
+        return Response(query_result)
 
     except Exception as e:
         return Response({

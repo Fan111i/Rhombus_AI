@@ -1,0 +1,71 @@
+@startuml
+title Rhombus AI - API Quick Reference
+
+
+package "File Management" {
+  class "POST /api/upload-file/" as upload {
+    Input: multipart/form-data
+    Supports: CSV, Excel, JSON, TXT
+    --
+    Output: data and column info
+  }
+
+  class "GET /api/manager/" as manager {
+    Input: none
+    --
+    Output: file manager page
+  }
+}
+
+package "Smart Regex" {
+  class "POST /api/convert-to-regex/" as regex {
+    Input: description, context, column_data
+    --
+    Output: pattern, source, explanation
+  }
+
+  class "POST /api/test-regex-pattern/" as test {
+    Input: pattern, sample_data, replacement
+    --
+    Output: results, match_rate
+  }
+}
+
+package "Data Analysis" {
+  class "POST /api/analyze-column/" as analyze {
+    Input: column_data, column_name
+    --
+    Output: patterns, insights, data_type
+  }
+
+  class "POST /api/natural-language-query/" as query {
+    Input: query, data, columns
+    --
+    Output: results, total_matches
+  }
+}
+
+package "Data Processing" {
+  class "POST /api/process-data/" as process {
+    Input: data, column, pattern, replacement
+    --
+    Output: processed_data, replacements
+  }
+
+  class "POST /api/test-replacement/" as replace {
+    Input: pattern, replacement, sample_text
+    --
+    Output: original, result, matches
+  }
+}
+
+upload --> analyze : analyze
+analyze --> regex : generate regex
+regex --> test : test
+test --> process : apply
+upload --> query : query
+
+note right of query : Innovation Feature:\nNatural Language SQL Query
+note right of analyze : Smart Analysis:\nAI-driven Data Insights
+
+@enduml

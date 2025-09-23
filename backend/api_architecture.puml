@@ -1,0 +1,62 @@
+@startuml
+title Rhombus AI - Backend API Architecture
+
+
+actor User as User
+participant "Django API" as API
+participant "LLM Service" as LLM
+participant "OpenAI" as OpenAI
+participant "HuggingFace" as HF
+
+== File Upload Processing ==
+User -> API: POST /api/upload-file/
+note right: Upload CSV/Excel/JSON/TXT files
+API -> API: Parse file format
+API -> API: Validate data integrity
+API --> User: Return data and column info
+
+== Smart Regex Generation ==
+User -> API: POST /api/convert-to-regex/
+note right: Description: "find email addresses"
+API -> LLM: Process natural language
+alt OpenAI Available
+    LLM -> OpenAI: GPT-3.5 call
+    OpenAI --> LLM: Return regex pattern
+else Use HuggingFace
+    LLM -> HF: CodeGPT call
+    HF --> LLM: Return result
+else Use Predefined Patterns
+    LLM -> LLM: Keyword matching
+end
+LLM --> API: Regex expression
+API --> User: Complete result
+
+== Data Analysis ==
+User -> API: POST /api/analyze-column/
+API -> LLM: Analyze column data
+LLM -> LLM: Detect patterns
+LLM -> LLM: Infer data type
+LLM --> API: Analysis result
+API --> User: Return insights
+
+== Natural Language Query ==
+User -> API: POST /api/natural-language-query/
+note right: Query: "find name is Josh"
+API -> LLM: Parse query
+LLM -> LLM: Validate column name
+alt Query Success
+    LLM -> LLM: Execute filtering
+    LLM --> API: Query result
+    API --> User: Matched data
+else Column Error
+    LLM --> API: Error and suggestions
+    API --> User: Smart tips
+end
+
+== Data Processing ==
+User -> API: POST /api/process-data/
+API -> LLM: Apply regex replacement
+LLM --> API: Processed data
+API --> User: Final result
+
+@enduml
