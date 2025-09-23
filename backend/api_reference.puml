@@ -20,8 +20,11 @@ package "File Management" {
 package "Smart Regex" {
   class "POST /api/convert-to-regex/" as regex {
     Input: description, context, column_data
+    Intelligence: Detects literal vs pattern intent
     --
     Output: pattern, source, explanation
+    Literal Mode: Returns exact values
+    Pattern Mode: Returns regex expressions
   }
 
   class "POST /api/test-regex-pattern/" as test {
@@ -67,5 +70,6 @@ upload --> query : query
 
 note right of query : Innovation Feature:\nNatural Language SQL Query
 note right of analyze : Smart Analysis:\nAI-driven Data Insights
+note right of regex : NEW: Intelligent Matching\\nLiteral: "find exactly X"\\nPattern: "find all X"
 
 @enduml

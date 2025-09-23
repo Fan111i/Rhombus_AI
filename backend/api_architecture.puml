@@ -17,18 +17,26 @@ API --> User: Return data and column info
 
 == Smart Regex Generation ==
 User -> API: POST /api/convert-to-regex/
-note right: Description: "find email addresses"
-API -> LLM: Process natural language
-alt OpenAI Available
-    LLM -> OpenAI: GPT-3.5 call
-    OpenAI --> LLM: Return regex pattern
-else Use HuggingFace
-    LLM -> HF: CodeGPT call
-    HF --> LLM: Return result
-else Use Predefined Patterns
-    LLM -> LLM: Keyword matching
+note right: Description: "find exactly josh@qq.com"
+API -> LLM: Analyze intent and content
+LLM -> LLM: Detect specific values vs patterns
+alt Literal Match Required
+    LLM -> LLM: Extract specific value
+    LLM --> API: Return literal pattern
+    note left: Returns: "josh@qq.com"
+else Pattern Match Required
+    alt OpenAI Available
+        LLM -> OpenAI: GPT-3.5 with intelligent prompt
+        OpenAI --> LLM: Return regex pattern
+    else Use HuggingFace
+        LLM -> HF: CodeGPT call
+        HF --> LLM: Return result
+    else Use Predefined Patterns
+        LLM -> LLM: Keyword matching
+    end
+    LLM --> API: General regex pattern
+    note left: Returns: "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"
 end
-LLM --> API: Regex expression
 API --> User: Complete result
 
 == Data Analysis ==

@@ -27,25 +27,42 @@ end note
 Client -> Backend: POST /api/convert-to-regex/
 note right
 {
-  "description": "find email addresses",
+  "description": "find exactly josh@qq.com",
   "context": "user contact info",
-  "column_data": ["john@test.com"]
+  "column_data": ["josh@qq.com", "test@gmail.com"]
 }
 end note
 
-Backend -> LLM: Process natural language request
-alt Generation Success
-    LLM -> LLM: OpenAI/HuggingFace processing
-    LLM --> Backend: Regex pattern
-    Backend --> Client: Success response
+Backend -> LLM: Analyze intent and detect specific values
+alt Literal Match Detected
+    LLM -> LLM: Extract specific value
+    LLM --> Backend: Literal pattern
+    Backend --> Client: Literal match response
     note left
     {
       "success": true,
-      "pattern": "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}",
-      "source": "openai",
-      "explanation": "Matches email format"
+      "pattern": "josh@qq.com",
+      "source": "fallback_literal",
+      "explanation": "Literal match for specific value: josh@qq.com"
     }
     end note
+else General Pattern Required
+    alt OpenAI Available
+        LLM -> LLM: OpenAI processing with intelligent prompt
+        LLM --> Backend: General regex pattern
+        Backend --> Client: Pattern response
+        note left
+        {
+          "success": true,
+          "pattern": "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}",
+          "source": "openai",
+          "explanation": "Matches email format"
+        }
+        end note
+    else Fallback Processing
+        LLM --> Backend: Fallback pattern
+        Backend --> Client: Fallback response
+    end
 else Generation Failed
     LLM --> Backend: Error info
     Backend --> Client: Error response
