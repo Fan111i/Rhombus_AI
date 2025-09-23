@@ -1,0 +1,144 @@
+@startuml
+title Rhombus AI - API Usage Guide
+
+
+participant Client as Client
+participant "Django Backend" as Backend
+participant "LLM Service" as LLM
+
+== File Upload API ==
+Client -> Backend: POST /api/upload-file/
+note right: Supports CSV, Excel, JSON, TXT formats
+Backend -> Backend: Parse file format
+Backend -> Backend: Validate data integrity
+Backend --> Client: Return data and column info
+note left
+{
+  "success": true,
+  "data": [
+    {"id": 1, "name": "John", "email": "john@test.com"}
+  ],
+  "columns": ["id", "name", "email"],
+  "row_count": 1
+}
+end note
+
+== Smart Regex Generation API ==
+Client -> Backend: POST /api/convert-to-regex/
+note right
+{
+  "description": "find exactly test@gmail.com",
+  "context": "user contact info",
+  "column_data": ["test@gmail.com", "admin@company.com"]
+}
+end note
+
+Backend -> LLM: Analyze intent and detect specific values
+alt Literal Match Detected
+    LLM -> LLM: Extract specific value
+    LLM --> Backend: Literal pattern
+    Backend --> Client: Literal match response
+    note left
+    {
+      "success": true,
+      "pattern": "test@gmail.com",
+      "source": "fallback_literal",
+      "explanation": "Literal match for specific value: test@gmail.com"
+    }
+    end note
+else General Pattern Required
+    alt OpenAI Available
+        LLM -> LLM: OpenAI processing with intelligent prompt
+        LLM --> Backend: General regex pattern
+        Backend --> Client: Pattern response
+        note left
+        {
+          "success": true,
+          "pattern": "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}",
+          "source": "openai",
+          "explanation": "Matches email format"
+        }
+        end note
+    else Fallback Processing
+        LLM --> Backend: Fallback pattern
+        Backend --> Client: Fallback response
+    end
+else Generation Failed
+    LLM --> Backend: Error info
+    Backend --> Client: Error response
+    note left
+    {
+      "success": false,
+      "error": "Generation failed"
+    }
+    end note
+end
+
+== Natural Language Query API ==
+Client -> Backend: POST /api/natural-language-query/
+note right
+{
+  "query": "find name is John",
+  "data": [{"name": "John", "age": 25}],
+  "columns": ["name", "age"]
+}
+end note
+
+Backend -> LLM: Parse query statement
+alt Query Success
+    LLM -> LLM: Parse syntax
+    LLM -> LLM: Validate column name
+    LLM -> LLM: Execute filtering
+    LLM --> Backend: Query result
+    Backend --> Client: Success response
+    note left
+    {
+      "success": true,
+      "results": [{"name": "John", "age": 25}],
+      "total_matches": 1
+    }
+    end note
+else Column Error
+    LLM --> Backend: Error and suggestions
+    Backend --> Client: Error response
+    note left
+    {
+      "success": false,
+      "error": "Column does not exist",
+      "suggestions": ["name"]
+    }
+    end note
+end
+
+== Data Analysis API ==
+Client -> Backend: POST /api/analyze-column/
+Backend -> LLM: Analyze column data
+LLM -> LLM: Detect patterns
+LLM -> LLM: Infer data type
+LLM --> Backend: Analysis result
+Backend --> Client: Return analysis
+note left
+{
+  "success": true,
+  "analysis": {
+    "patterns": [...],
+    "data_type": "email",
+    "insights": [...]
+  }
+}
+end note
+
+== Data Processing API ==
+Client -> Backend: POST /api/process-data/
+Backend -> LLM: Apply regex replacement
+LLM --> Backend: Processed data
+Backend --> Client: Final result
+note left
+{
+  "success": true,
+  "processed_data": [...],
+  "total_replacements": 2
+}
+end note
+
+@enduml
