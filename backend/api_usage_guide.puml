@@ -27,9 +27,9 @@ end note
 Client -> Backend: POST /api/convert-to-regex/
 note right
 {
-  "description": "find exactly josh@qq.com",
+  "description": "find exactly test@gmail.com",
   "context": "user contact info",
-  "column_data": ["josh@qq.com", "test@gmail.com"]
+  "column_data": ["test@gmail.com", "admin@company.com"]
 }
 end note
 
@@ -41,9 +41,9 @@ alt Literal Match Detected
     note left
     {
       "success": true,
-      "pattern": "josh@qq.com",
+      "pattern": "test@gmail.com",
       "source": "fallback_literal",
-      "explanation": "Literal match for specific value: josh@qq.com"
+      "explanation": "Literal match for specific value: test@gmail.com"
     }
     end note
 else General Pattern Required

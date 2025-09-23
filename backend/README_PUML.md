@@ -74,9 +74,9 @@ plantuml api_reference.puml
 curl -X POST http://127.0.0.1:8000/api/convert-to-regex/ \
   -H "Content-Type: application/json" \
   -d '{
-    "description": "find exactly josh@qq.com",
+    "description": "find exactly test@gmail.com",
     "context": "user contact information",
-    "column_data": ["josh@qq.com", "test@gmail.com"]
+    "column_data": ["test@gmail.com", "admin@company.com"]
   }'
 ```
 
@@ -136,9 +136,9 @@ All API endpoints include comprehensive error handling:
 ### Smart Regex Matching 🆕
 
 #### Literal Matching (Exact Values)
-- `"find exactly josh@qq.com"` - Returns: `josh@qq.com`
+- `"find exactly test@gmail.com"` - Returns: `test@gmail.com`
 - `"find specific 123-456-7890"` - Returns: `123-456-7890`
-- `"match only admin@site.com"` - Returns: `admin@site.com`
+- `"match only admin@company.com"` - Returns: `admin@company.com`
 
 #### Pattern Matching (General Rules)
 - `"find all email addresses"` - Returns: `[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}`
