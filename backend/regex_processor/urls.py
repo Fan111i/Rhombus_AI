@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path('', views.main_page, name='main_page'),  # New unified main page
     path('convert-to-regex/', views.convert_to_regex, name='convert_to_regex'),
     path('test-replacement/', views.test_regex_replacement, name='test_replacement'),
     path('analyze-column/', views.analyze_column, name='analyze_column'),
@@ -12,4 +13,5 @@ urlpatterns = [
     path('manager/', views.file_manager_page, name='file_manager_page'),
     path('upload-file/', views.upload_file, name='upload_file'),
     path('process-data/', views.process_data, name='process_data'),
+    path('process-task/', views.process_natural_language_task, name='process_task'),
 ]

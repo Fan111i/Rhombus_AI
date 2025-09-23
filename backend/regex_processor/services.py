@@ -744,3 +744,122 @@ Return only the regex pattern."""
                 "error": f"Regex application error: {str(e)}",
                 "original": text
             }
+
+    def parse_natural_language_task(self, task_description, dataset, columns):
+        """
+        Parse natural language task to extract column, pattern, and replacement
+        Examples:
+        - "Find email addresses in the Email column and replace them with 'REDACTED'"
+        - "Find phone numbers in the Contact column"
+        """
+        import re
+        from difflib import get_close_matches
+
+        task_lower = task_description.lower()
+
+        # Extract column name
+        target_column = None
+
+        # Look for explicit column references
+        for column in columns:
+            column_patterns = [
+                f"in the {column.lower()} column",
+                f"from the {column.lower()} column",
+                f"in {column.lower()} column",
+                f"from {column.lower()} column",
+                f"in the {column.lower()}",
+                f"from the {column.lower()}",
+            ]
+
+            for pattern in column_patterns:
+                if pattern in task_lower:
+                    target_column = column
+                    break
+
+            if target_column:
+                break
+
+        # If no explicit column found, try to match column names anywhere in the text
+        if not target_column:
+            for column in columns:
+                if column.lower() in task_lower:
+                    target_column = column
+                    break
+
+        # If still no column found, suggest closest matches
+        if not target_column:
+            # Look for potential column words in the task
+            words = re.findall(r'\b\w+\b', task_lower)
+            for word in words:
+                matches = get_close_matches(word, [col.lower() for col in columns], n=1, cutoff=0.6)
+                if matches:
+                    # Find the original column name
+                    for col in columns:
+                        if col.lower() == matches[0]:
+                            return {
+                                'success': False,
+                                'error': f'Column "{word}" not found. Did you mean: {col}?',
+                                'suggestions': [col],
+                                'available_columns': columns
+                            }
+
+            return {
+                'success': False,
+                'error': 'Could not identify target column. Please specify which column to process.',
+                'suggestions': columns,
+                'available_columns': columns
+            }
+
+        # Extract pattern description
+        pattern_description = ""
+        replacement_value = None
+
+        # Look for "find/replace" patterns
+        find_match = re.search(r'find\s+([^in]+?)(?:\s+in\s+the|\s+from\s+the|\s+in|\s+and)', task_lower)
+        if find_match:
+            pattern_description = find_match.group(1).strip()
+
+        # Look for replacement value
+        replace_patterns = [
+            r"replace\s+(?:them\s+)?with\s+['\"]([^'\"]+)['\"]",
+            r"replace\s+(?:them\s+)?with\s+(\w+)",
+            r"replace.*?with\s+['\"]([^'\"]+)['\"]",
+            r"replace.*?with\s+(\w+)"
+        ]
+
+        for pattern in replace_patterns:
+            match = re.search(pattern, task_lower)
+            if match:
+                replacement_value = match.group(1)
+                break
+
+        # If no pattern found, try to extract from beginning
+        if not pattern_description:
+            # Look for common pattern words
+            pattern_words = ['email', 'phone', 'number', 'address', 'url', 'link', 'date', 'time']
+            for word in pattern_words:
+                if word in task_lower:
+                    if word == 'email':
+                        pattern_description = 'email addresses'
+                    elif word == 'phone':
+                        pattern_description = 'phone numbers'
+                    elif word == 'number':
+                        pattern_description = 'numbers'
+                    elif word in ['url', 'link']:
+                        pattern_description = 'URLs'
+                    elif word == 'date':
+                        pattern_description = 'dates'
+                    elif word == 'time':
+                        pattern_description = 'time'
+                    break
+
+        if not pattern_description:
+            pattern_description = "patterns"
+
+        return {
+            'success': True,
+            'column': target_column,
+            'pattern_description': pattern_description,
+            'replacement': replacement_value,
+            'task': task_description
+        }
