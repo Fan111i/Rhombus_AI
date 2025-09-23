@@ -54,6 +54,185 @@
             transition: all 0.3s;
         }
 
+        .upload-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .upload-btn.secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        }
+
+        .files-info {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            margin: 5px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .file-details {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .file-meta {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .file-action-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-action-btn:hover {
+            background: #c82333;
+        }
+
+        .combined-stats {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 80%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .modal-text {
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
+        .modal-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .modal-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .modal-btn.danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+
+        .modal-btn.secondary {
+            background: #f8f9fa;
+            color: #6c757d;
+            border: 1px solid #dee2e6;
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
         .upload-section:hover {
             border-color: #764ba2;
             background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
@@ -445,10 +624,44 @@
                     <span class="file-type">TSV</span>
                     <span class="file-type">TXT</span>
                 </div>
-                <input type="file" id="fileInput" class="file-input"
-                       accept=".csv,.xlsx,.xls,.json,.tsv,.txt,.xml">
             </div>
-            <div class="file-info" id="fileInfo"></div>
+
+            <div class="upload-buttons">
+                <button class="upload-btn" onclick="openFileDialog('new')">
+                    📁 Open New File
+                </button>
+                <button class="upload-btn secondary" onclick="openFileDialog('add')" style="display: none;" id="addMoreBtn">
+                    ➕ Add More Files
+                </button>
+            </div>
+
+            <input type="file" id="fileInput" class="file-input"
+                   accept=".csv,.xlsx,.xls,.json,.tsv,.txt,.xml">
+
+            <div class="files-info" id="filesInfo">
+                <h4>📂 Loaded Files (<span id="fileCount">0</span>/10):</h4>
+                <div id="filesList"></div>
+            </div>
+
+            <div class="combined-stats" id="combinedStats">
+                <strong>🔗 Combined Dataset:</strong>
+                <span id="combinedRowCount">0</span> total rows from
+                <span id="combinedFileCount">0</span> files
+            </div>
+        </div>
+
+        <!-- Confirmation Modal -->
+        <div id="confirmationModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="modalTitle">Confirm Action</h3>
+                    <p class="modal-text" id="modalText">Are you sure?</p>
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn secondary" onclick="closeModal()">Cancel</button>
+                    <button class="modal-btn primary" id="modalConfirmBtn" onclick="confirmAction()">Confirm</button>
+                </div>
+            </div>
         </div>
 
         <!-- Loading Indicator -->
@@ -515,6 +728,8 @@
     </div>
 
     <script>
+        // Multi-file state management
+        let loadedFiles = [];
         let originalData = [];
         let filteredData = [];
         let currentPage = 1;
@@ -522,13 +737,23 @@
         let sortColumn = null;
         let sortDirection = 'asc';
         let columns = [];
-        let fileName = '';
+        let currentUploadMode = 'new';
+        let pendingAction = null;
+
+        const MAX_FILES = 10;
+        const MAX_TOTAL_ROWS = 100000;
 
         // File upload handling
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
 
-        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('click', () => {
+            if (loadedFiles.length === 0) {
+                openFileDialog('new');
+            } else {
+                openFileDialog('add');
+            }
+        });
         uploadArea.addEventListener('dragover', handleDragOver);
         uploadArea.addEventListener('dragleave', handleDragLeave);
         uploadArea.addEventListener('drop', handleDrop);
@@ -558,29 +783,51 @@
             }
         }
 
+        function openFileDialog(mode) {
+            if (mode === 'new' && loadedFiles.length > 0) {
+                showConfirmationModal(
+                    '🗑️ Replace Current Files?',
+                    'Opening new files will clear all currently loaded data. Do you want to continue?',
+                    () => {
+                        clearAllFiles();
+                        currentUploadMode = 'new';
+                        fileInput.click();
+                    }
+                );
+            } else {
+                currentUploadMode = mode;
+                fileInput.click();
+            }
+        }
+
         function handleFileSelect(e) {
             const file = e.target.files[0];
             if (file) {
                 processFile(file);
             }
+            // Reset input to allow selecting the same file again
+            e.target.value = '';
         }
 
         async function processFile(file) {
-            fileName = file.name;
+            // Check file limits
+            if (loadedFiles.length >= MAX_FILES) {
+                showError(`❌ Maximum ${MAX_FILES} files allowed. Please remove some files first.`);
+                return;
+            }
+
+            // Check if file already loaded
+            const existingFile = loadedFiles.find(f => f.name === file.name);
+            if (existingFile) {
+                showError(`❌ File "${file.name}" is already loaded.`);
+                return;
+            }
+
             const formData = new FormData();
             formData.append('file', file);
 
-            // Show file info
-            document.getElementById('fileInfo').innerHTML = `
-                <strong>📄 File:</strong> ${file.name}
-                <strong>📏 Size:</strong> ${(file.size / 1024).toFixed(1)} KB
-                <strong>📅 Modified:</strong> ${new Date(file.lastModified).toLocaleDateString()}
-            `;
-            document.getElementById('fileInfo').style.display = 'block';
-
             // Show loading
             document.getElementById('loading').style.display = 'block';
-            hideDataContainer();
 
             try {
                 const response = await fetch('/api/upload-file/', {
@@ -594,10 +841,7 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    originalData = data.data;
-                    columns = data.columns;
-                    initializeDataView();
-                    showSuccess(`✅ Successfully loaded ${data.row_count} rows and ${data.columns.length} columns`);
+                    await handleFileUploadSuccess(file, data);
                 } else {
                     showError('Upload failed: ' + data.error);
                 }
@@ -607,6 +851,137 @@
             }
 
             document.getElementById('loading').style.display = 'none';
+        }
+
+        async function handleFileUploadSuccess(file, uploadData) {
+            const fileExtension = file.name.toLowerCase().split('.').pop();
+            const fileType = getFileType(fileExtension);
+
+            // Check compatibility with existing files
+            if (loadedFiles.length > 0 && currentUploadMode === 'add') {
+                const existingFileType = getFileType(loadedFiles[0].extension);
+
+                if (!areFilesCompatible(fileType, existingFileType)) {
+                    showConfirmationModal(
+                        '⚠️ Incompatible File Types',
+                        `This ${fileType} file is not compatible with your loaded ${existingFileType} files.
+                        Do you want to replace all files with this new one?`,
+                        () => {
+                            clearAllFiles();
+                            addFileToCollection(file, uploadData, fileExtension, fileType);
+                        }
+                    );
+                    return;
+                }
+
+                // Check total row limit
+                const totalRows = loadedFiles.reduce((sum, f) => sum + f.rowCount, 0) + uploadData.data.length;
+                if (totalRows > MAX_TOTAL_ROWS) {
+                    showError(`❌ Total rows would exceed ${MAX_TOTAL_ROWS}. Current: ${totalRows - uploadData.data.length}, Adding: ${uploadData.data.length}`);
+                    return;
+                }
+
+                // Check column compatibility
+                if (!areColumnsCompatible(uploadData.columns)) {
+                    showConfirmationModal(
+                        '📊 Different Column Structure',
+                        `This file has different columns than your loaded files.
+                        Missing columns will be filled with empty values. Continue?`,
+                        () => addFileToCollection(file, uploadData, fileExtension, fileType)
+                    );
+                    return;
+                }
+            }
+
+            addFileToCollection(file, uploadData, fileExtension, fileType);
+        }
+
+        function addFileToCollection(file, uploadData, fileExtension, fileType) {
+            const fileInfo = {
+                name: file.name,
+                extension: fileExtension,
+                type: fileType,
+                size: file.size,
+                lastModified: file.lastModified,
+                rowCount: uploadData.data.length,
+                columnCount: uploadData.columns.length,
+                data: uploadData.data,
+                columns: uploadData.columns
+            };
+
+            loadedFiles.push(fileInfo);
+            combineAllData();
+            updateFilesDisplay();
+            updateDataView();
+
+            document.getElementById('addMoreBtn').style.display = 'inline-block';
+
+            showSuccess(`✅ Added "${file.name}" - ${uploadData.data.length} rows, ${uploadData.columns.length} columns`);
+        }
+
+        function getFileType(extension) {
+            const typeMap = {
+                'csv': 'CSV',
+                'xlsx': 'Excel',
+                'xls': 'Excel',
+                'json': 'JSON',
+                'tsv': 'TSV',
+                'txt': 'Text',
+                'xml': 'XML'
+            };
+            return typeMap[extension] || 'Unknown';
+        }
+
+        function areFilesCompatible(type1, type2) {
+            // Define compatible groups
+            const compatibleGroups = [
+                ['CSV', 'TSV', 'Text', 'Excel'], // Tabular data
+                ['JSON'], // JSON only with JSON
+                ['XML']   // XML only with XML
+            ];
+
+            return compatibleGroups.some(group =>
+                group.includes(type1) && group.includes(type2)
+            );
+        }
+
+        function areColumnsCompatible(newColumns) {
+            if (loadedFiles.length === 0) return true;
+
+            const existingColumns = columns;
+            const hasAllExisting = existingColumns.every(col => newColumns.includes(col));
+            const hasAllNew = newColumns.every(col => existingColumns.includes(col));
+
+            return hasAllExisting && hasAllNew;
+        }
+
+        function combineAllData() {
+            if (loadedFiles.length === 0) {
+                originalData = [];
+                columns = [];
+                return;
+            }
+
+            // Get all unique columns
+            const allColumns = new Set();
+            loadedFiles.forEach(file => {
+                file.columns.forEach(col => allColumns.add(col));
+            });
+            columns = Array.from(allColumns);
+
+            // Combine all data
+            originalData = [];
+            loadedFiles.forEach((file, fileIndex) => {
+                file.data.forEach(row => {
+                    const normalizedRow = {};
+                    columns.forEach(col => {
+                        normalizedRow[col] = row[col] || '';
+                    });
+                    normalizedRow._fileSource = file.name;
+                    normalizedRow._fileIndex = fileIndex;
+                    originalData.push(normalizedRow);
+                });
+            });
         }
 
         function initializeDataView() {
@@ -867,15 +1242,136 @@
             return csvRows.join('\n');
         }
 
-        function clearData() {
-            if (confirm('Are you sure you want to clear all data?')) {
-                originalData = [];
-                filteredData = [];
-                columns = [];
+        function updateFilesDisplay() {
+            const filesInfo = document.getElementById('filesInfo');
+            const filesList = document.getElementById('filesList');
+            const fileCount = document.getElementById('fileCount');
+            const combinedStats = document.getElementById('combinedStats');
+            const combinedRowCount = document.getElementById('combinedRowCount');
+            const combinedFileCount = document.getElementById('combinedFileCount');
+
+            if (loadedFiles.length === 0) {
+                filesInfo.style.display = 'none';
+                combinedStats.style.display = 'none';
+                document.getElementById('addMoreBtn').style.display = 'none';
+                return;
+            }
+
+            filesInfo.style.display = 'block';
+            combinedStats.style.display = 'block';
+            fileCount.textContent = loadedFiles.length;
+
+            const totalRows = loadedFiles.reduce((sum, f) => sum + f.rowCount, 0);
+            combinedRowCount.textContent = totalRows;
+            combinedFileCount.textContent = loadedFiles.length;
+
+            // Update files list
+            filesList.innerHTML = '';
+            loadedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="file-details">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-meta">
+                            ${file.type} • ${(file.size / 1024).toFixed(1)} KB •
+                            ${file.rowCount} rows • ${file.columnCount} columns
+                        </div>
+                    </div>
+                    <div class="file-actions">
+                        <button class="file-action-btn" onclick="removeFile(${index})">🗑️</button>
+                    </div>
+                `;
+                filesList.appendChild(fileItem);
+            });
+        }
+
+        function updateDataView() {
+            if (loadedFiles.length === 0) {
                 hideDataContainer();
-                document.getElementById('fileInfo').style.display = 'none';
-                document.getElementById('fileInput').value = '';
-                document.getElementById('searchInput').value = '';
+                return;
+            }
+
+            // Update file name display
+            const fileNameDisplay = document.getElementById('fileName');
+            if (loadedFiles.length === 1) {
+                fileNameDisplay.textContent = loadedFiles[0].name;
+            } else {
+                fileNameDisplay.textContent = `Combined Dataset (${loadedFiles.length} files)`;
+            }
+
+            // Setup column filter with source info
+            setupColumnFilter();
+            updateStats();
+            renderTable();
+
+            // Show controls and data container
+            document.getElementById('controls').style.display = 'block';
+            document.getElementById('dataContainer').style.display = 'block';
+        }
+
+        function removeFile(index) {
+            const file = loadedFiles[index];
+            showConfirmationModal(
+                '🗑️ Remove File?',
+                `Remove "${file.name}" from the dataset?`,
+                () => {
+                    loadedFiles.splice(index, 1);
+                    combineAllData();
+                    updateFilesDisplay();
+                    updateDataView();
+                    showSuccess(`✅ Removed "${file.name}"`);
+                }
+            );
+        }
+
+        function clearAllFiles() {
+            loadedFiles = [];
+            originalData = [];
+            filteredData = [];
+            columns = [];
+            hideDataContainer();
+            updateFilesDisplay();
+            document.getElementById('searchInput').value = '';
+            document.getElementById('columnFilter').value = '';
+        }
+
+        function clearData() {
+            if (loadedFiles.length > 0) {
+                showConfirmationModal(
+                    '🗑️ Clear All Data?',
+                    'This will remove all loaded files and data. Are you sure?',
+                    () => clearAllFiles()
+                );
+            }
+        }
+
+        // Modal functions
+        function showConfirmationModal(title, text, confirmCallback) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalText').textContent = text;
+            document.getElementById('confirmationModal').style.display = 'block';
+            pendingAction = confirmCallback;
+        }
+
+        function closeModal() {
+            document.getElementById('confirmationModal').style.display = 'none';
+            pendingAction = null;
+        }
+
+        function confirmAction() {
+            if (pendingAction) {
+                pendingAction();
+                pendingAction = null;
+            }
+            closeModal();
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('confirmationModal');
+            if (event.target === modal) {
+                closeModal();
             }
         }
 
