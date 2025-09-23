@@ -159,6 +159,7 @@ def test_regex_replacement(request):
         replacement = data.get('replacement', '')
         sample_text = data.get('sample_text', '').strip()
 
+
         if not all([pattern, sample_text]):
             return Response({
                 'error': 'Pattern and sample_text are required'

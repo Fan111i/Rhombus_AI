@@ -102,10 +102,13 @@ class LLMService:
             "Content-Type": "application/json"
         }
 
+        # Build intelligent system message based on the description
+        system_message = self._build_intelligent_system_message(description, column_analysis)
+
         payload = {
             "model": "gpt-3.5-turbo",
             "messages": [
-                {"role": "system", "content": "You are an expert in regular expressions. Always return a valid regex pattern and explain it briefly."},
+                {"role": "system", "content": system_message},
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.1,
@@ -133,7 +136,7 @@ class LLMService:
 
             return {"success": False}
 
-        except Exception:
+        except Exception as e:
             return {"success": False}
 
     def _try_huggingface_regex(self, description, context="", column_analysis=None):
@@ -198,9 +201,34 @@ Regex pattern:"""
     def _get_fallback_pattern(self, description):
         """
         Return a predefined regex pattern based on description keywords
+        Enhanced to detect specific values and create literal matches
         """
         description_lower = description.lower()
 
+        # First check if description contains specific values that should be matched literally
+        specific_patterns = [
+            r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}',  # email
+            r'\d{3}-?\d{3}-?\d{4}',  # phone
+            r'https?://[^\s]+',  # URL
+        ]
+
+        # Check for specific values in the description
+        for pattern in specific_patterns:
+            matches = re.findall(pattern, description)
+            if matches:
+                # User provided a specific value, create literal match
+                specific_value = matches[0]
+                # For literal matching, return the unescaped value to avoid JSON escaping issues
+                # The regex engine will still handle it correctly
+                return {
+                    "success": True,
+                    "pattern": specific_value,  # Use literal value instead of escaped
+                    "description": description,
+                    "source": "fallback_literal",
+                    "explanation": f"Literal match for specific value: {specific_value}"
+                }
+
+        # Default general patterns
         patterns = {
             'email': r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}',
             'phone': r'\d{3}-?\d{3}-?\d{4}',
@@ -629,6 +657,73 @@ Regex pattern:"""
                 filtered_results.append(row)
 
         return filtered_results
+
+    def _build_intelligent_system_message(self, description, column_analysis=None):
+        """
+        Build an intelligent system message based on the user's intent
+        """
+        description_lower = description.lower()
+
+        # Check if user wants exact/literal matching
+        exact_indicators = [
+            'find exactly', 'match exactly', 'find specific', 'match specific',
+            'find only', 'match only', 'is exactly', '= ', '==', 'equals'
+        ]
+
+        # Check if description contains specific values (emails, phone numbers, etc.)
+        specific_patterns = [
+            r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}',  # email
+            r'\d{3}-?\d{3}-?\d{4}',  # phone
+            r'https?://[^\s]+',  # URL
+        ]
+
+        # Check for exact match indicators
+        wants_exact_match = any(indicator in description_lower for indicator in exact_indicators)
+
+        # Check if description contains specific values
+        contains_specific_value = False
+        specific_value = None
+
+        for pattern in specific_patterns:
+            matches = re.findall(pattern, description)
+            if matches:
+                contains_specific_value = True
+                specific_value = matches[0]
+                break
+
+        # Build intelligent system message
+        if wants_exact_match or (contains_specific_value and not any(word in description_lower for word in ['find all', 'find any', 'match all', 'match any'])):
+            return """You are an expert in regular expressions.
+
+IMPORTANT: The user wants to match a SPECIFIC VALUE, not a general pattern.
+
+If the user provides a specific value (like an email address, phone number, or exact text), create a LITERAL match pattern that matches only that exact value.
+
+Rules:
+1. For specific emails like "josh@qq.com", return: josh@qq\.com
+2. For specific phones like "123-456-7890", return: 123-456-7890
+3. For exact text like "John Smith", return: John Smith
+4. Escape special regex characters in literal values (. becomes \.)
+5. Do not create general patterns unless explicitly asked for "all" or "any"
+
+Return only the regex pattern."""
+
+        else:
+            # General pattern matching
+            base_message = "You are an expert in regular expressions. Create general patterns that match the described type of data."
+
+            # Add context-specific guidance
+            if column_analysis:
+                data_type = column_analysis.get('data_type', 'text')
+                if data_type == 'email':
+                    base_message += "\n\nThe data appears to be email addresses. Create a comprehensive email matching pattern."
+                elif data_type == 'phone':
+                    base_message += "\n\nThe data appears to be phone numbers. Create a flexible phone number pattern."
+                elif data_type == 'number':
+                    base_message += "\n\nThe data appears to be numbers. Create an appropriate numeric pattern."
+
+            base_message += "\n\nReturn a valid regex pattern and explain it briefly."
+            return base_message
 
     def apply_regex_replacement(self, text, pattern, replacement):
         """

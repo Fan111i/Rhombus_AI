@@ -233,17 +233,19 @@
                     // Test replacement if sample text provided
                     if (sampleText) {
                         try {
+                            const requestData = {
+                                pattern: data.pattern,
+                                replacement: replacement || '[MATCH]',
+                                sample_text: sampleText
+                            };
+
                             const replaceResponse = await fetch('/api/test-replacement/', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
                                     'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
                                 },
-                                body: JSON.stringify({
-                                    pattern: data.pattern,
-                                    replacement: replacement || '[MATCH]',
-                                    sample_text: sampleText
-                                })
+                                body: JSON.stringify(requestData)
                             });
 
                             const replaceData = await replaceResponse.json();
