@@ -99,6 +99,8 @@ def upload_file(request):
         file_extension = uploaded_file.name.lower().split('.')[-1]
 
         # Parse file based on extension
+        display_type = 'table'  # Default to table display
+
         if file_extension == 'csv':
             data, columns = parse_csv_file(uploaded_file)
         elif file_extension in ['xlsx', 'xls']:
@@ -108,7 +110,11 @@ def upload_file(request):
         elif file_extension == 'tsv':
             data, columns = parse_tsv_file(uploaded_file)
         elif file_extension == 'txt':
-            data, columns = parse_txt_file(uploaded_file)
+            result = parse_txt_file(uploaded_file)
+            if len(result) == 3:  # New format with display type
+                data, columns, display_type = result
+            else:  # Fallback for old format
+                data, columns = result
         elif file_extension == 'xml':
             data, columns = parse_xml_file(uploaded_file)
         else:
@@ -122,7 +128,8 @@ def upload_file(request):
             'data': data,
             'columns': columns,
             'row_count': len(data),
-            'file_name': uploaded_file.name
+            'file_name': uploaded_file.name,
+            'display_type': display_type
         })
 
     except Exception as e:
@@ -265,40 +272,57 @@ def parse_tsv_file(file):
 
 
 def parse_txt_file(file):
-    """Parse TXT file (assume CSV with auto-detection) and return data and columns"""
+    """Parse TXT file and return data and columns"""
     import pandas as pd
     import io
 
     content = file.read().decode('utf-8')
 
-    # Try to detect separator
-    first_line = content.split('\n')[0] if content else ''
-    if '\t' in first_line:
-        sep = '\t'
-    elif ',' in first_line:
-        sep = ','
-    elif ';' in first_line:
-        sep = ';'
-    elif '|' in first_line:
-        sep = '|'
-    else:
-        # If no clear separator, treat each line as a single column
-        lines = content.strip().split('\n')
-        data = [{'text': line} for line in lines if line.strip()]
-        columns = ['text']
-        return data, columns
+    # First check if it looks like structured data (has clear separators)
+    lines = content.strip().split('\n')
 
-    try:
-        df = pd.read_csv(io.StringIO(content), sep=sep)
-        data = df.fillna('').to_dict('records')
-        columns = list(df.columns)
-        return data, columns
-    except:
-        # Fallback: treat as single column
-        lines = content.strip().split('\n')
-        data = [{'text': line} for line in lines if line.strip()]
-        columns = ['text']
-        return data, columns
+    if len(lines) < 2:
+        # Single line or empty file, treat as text
+        data = [{'content': content}]
+        columns = ['content']
+        return data, columns, 'text'
+
+    # Count potential separators in first few lines
+    separator_count = {}
+    for line in lines[:min(10, len(lines))]:  # Check first 10 lines
+        for sep in ['\t', ',', ';', '|']:
+            count = line.count(sep)
+            if count > 0:
+                separator_count[sep] = separator_count.get(sep, 0) + count
+
+    # If we have consistent separators, try to parse as structured data
+    if separator_count:
+        # Find the most common separator
+        best_sep = max(separator_count.keys(), key=lambda k: separator_count[k])
+
+        # Check if the separator appears consistently across multiple lines
+        sep_counts = [line.count(best_sep) for line in lines[:min(10, len(lines))]]
+        consistent_count = sep_counts[0] if sep_counts else 0
+
+        # Must have at least 1 separator per line and be consistent
+        if (consistent_count > 0 and
+            all(count == consistent_count for count in sep_counts[:5]) and  # First 5 lines consistent
+            consistent_count >= 1):  # At least 1 separator (2 columns)
+
+            try:
+                df = pd.read_csv(io.StringIO(content), sep=best_sep)
+                if len(df.columns) > 1 and len(df) > 0:  # Actually structured data with multiple columns
+                    data = df.fillna('').to_dict('records')
+                    columns = list(df.columns)
+                    return data, columns, 'table'
+            except:
+                pass
+
+    # Otherwise, treat as plain text
+    # Return the full content as a single text field for text display
+    data = [{'content': content}]
+    columns = ['content']
+    return data, columns, 'text'
 
 
 def parse_xml_file(file):

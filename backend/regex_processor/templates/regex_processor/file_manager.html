@@ -394,6 +394,28 @@
             display: none;
         }
 
+        .text-container {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .text-content {
+            padding: 20px;
+            max-height: 600px;
+            overflow: auto;
+            border: 1px solid #dee2e6;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background: #f8f9fa;
+            color: #333;
+        }
+
         .data-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -687,7 +709,8 @@
                     <option value="500">500 rows</option>
                 </select>
 
-                <button class="btn" onclick="exportData('csv')">📥 Export CSV</button>
+                <button class="btn" onclick="exportData('csv')" id="exportCsvBtn">📥 Export CSV</button>
+                <button class="btn" onclick="exportText()" id="exportTxtBtn" style="display: none;">📥 Export Text</button>
                 <button class="btn btn-secondary" onclick="clearData()">🗑️ Clear</button>
             </div>
         </div>
@@ -725,6 +748,29 @@
 
             <div class="pagination" id="pagination"></div>
         </div>
+
+        <!-- Text Container -->
+        <div class="text-container" id="textContainer">
+            <div class="data-header">
+                <h3 id="textFileName">Text Preview</h3>
+                <div class="data-stats">
+                    <div class="stat">
+                        <span class="stat-number" id="textCharCount">0</span>
+                        <span class="stat-label">Characters</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number" id="textLineCount">0</span>
+                        <span class="stat-label">Lines</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number" id="textWordCount">0</span>
+                        <span class="stat-label">Words</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-content" id="textContent"></div>
+        </div>
     </div>
 
     <script>
@@ -739,6 +785,7 @@
         let columns = [];
         let currentUploadMode = 'new';
         let pendingAction = null;
+        let currentDisplayType = 'table';
 
         const MAX_FILES = 10;
         const MAX_TOTAL_ROWS = 100000;
@@ -906,10 +953,21 @@
                 rowCount: uploadData.data.length,
                 columnCount: uploadData.columns.length,
                 data: uploadData.data,
-                columns: uploadData.columns
+                columns: uploadData.columns,
+                displayType: uploadData.display_type || 'table'
             };
 
             loadedFiles.push(fileInfo);
+
+            // Set current display type: prioritize table for CSV/Excel, only use text for pure text files
+            if (['csv', 'xlsx', 'xls', 'tsv', 'json', 'xml'].includes(fileExtension)) {
+                currentDisplayType = 'table';
+            } else if (fileExtension === 'txt' && uploadData.display_type === 'text') {
+                currentDisplayType = 'text';
+            } else {
+                currentDisplayType = 'table';  // Default fallback
+            }
+
             combineAllData();
             updateFilesDisplay();
             updateDataView();
@@ -958,6 +1016,7 @@
         function combineAllData() {
             if (loadedFiles.length === 0) {
                 originalData = [];
+                filteredData = [];
                 columns = [];
                 return;
             }
@@ -982,6 +1041,9 @@
                     originalData.push(normalizedRow);
                 });
             });
+
+            // Initialize filtered data
+            filteredData = [...originalData];
         }
 
         function initializeDataView() {
@@ -1226,6 +1288,24 @@
             showSuccess(`✅ Exported ${filteredData.length} rows to ${filename}`);
         }
 
+        function exportText() {
+            if (!loadedFiles.length || currentDisplayType !== 'text') return;
+
+            const file = loadedFiles[0];
+            const textContent = file.data[0].content;
+            const filename = file.name.replace(/\.[^/.]+$/, '') + '_exported.txt';
+
+            const blob = new Blob([textContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            showSuccess(`✅ Exported text to ${filename}`);
+        }
+
         function convertToCSV(data) {
             if (!data || data.length === 0) return '';
 
@@ -1292,6 +1372,70 @@
                 return;
             }
 
+            // Check if we should display as text or table
+            // Text display is only allowed for single TXT files
+            if (currentDisplayType === 'text' && loadedFiles.length === 1 &&
+                loadedFiles[0].extension === 'txt' && loadedFiles[0].displayType === 'text') {
+                displayAsText();
+            } else {
+                // Always display as table for CSV, Excel, multiple files, or structured data
+                currentDisplayType = 'table';
+                displayAsTable();
+            }
+        }
+
+        function displayAsText() {
+            // Hide table container and show text container
+            document.getElementById('dataContainer').style.display = 'none';
+            document.getElementById('textContainer').style.display = 'block';
+            document.getElementById('controls').style.display = 'block';
+
+            // Show/hide appropriate buttons
+            document.getElementById('exportCsvBtn').style.display = 'none';
+            document.getElementById('exportTxtBtn').style.display = 'inline-block';
+
+            // Hide search and filter controls for text
+            document.getElementById('searchInput').style.display = 'none';
+            document.getElementById('columnFilter').style.display = 'none';
+            document.getElementById('rowsPerPage').style.display = 'none';
+
+            const file = loadedFiles[0];
+            const textContent = file.data[0].content;
+
+            // Update file name display
+            document.getElementById('textFileName').textContent = file.name;
+
+            // Display text content
+            document.getElementById('textContent').textContent = textContent;
+
+            // Update text stats
+            const lineCount = textContent.split('\n').length;
+            const wordCount = textContent.split(/\s+/).filter(word => word.length > 0).length;
+            const charCount = textContent.length;
+
+            document.getElementById('textLineCount').textContent = lineCount;
+            document.getElementById('textWordCount').textContent = wordCount;
+            document.getElementById('textCharCount').textContent = charCount;
+        }
+
+        function displayAsTable() {
+            // Hide text container and show table container
+            document.getElementById('textContainer').style.display = 'none';
+            document.getElementById('dataContainer').style.display = 'block';
+
+            // Show/hide appropriate buttons
+            document.getElementById('exportCsvBtn').style.display = 'inline-block';
+            document.getElementById('exportTxtBtn').style.display = 'none';
+
+            // Show search and filter controls for table
+            document.getElementById('searchInput').style.display = 'block';
+            document.getElementById('columnFilter').style.display = 'block';
+            document.getElementById('rowsPerPage').style.display = 'block';
+
+            // Initialize filtered data
+            filteredData = [...originalData];
+            currentPage = 1;
+
             // Update file name display
             const fileNameDisplay = document.getElementById('fileName');
             if (loadedFiles.length === 1) {
@@ -1307,7 +1451,6 @@
 
             // Show controls and data container
             document.getElementById('controls').style.display = 'block';
-            document.getElementById('dataContainer').style.display = 'block';
         }
 
         function removeFile(index) {
@@ -1317,6 +1460,16 @@
                 `Remove "${file.name}" from the dataset?`,
                 () => {
                     loadedFiles.splice(index, 1);
+
+                    // Reset display type if needed
+                    if (loadedFiles.length === 0) {
+                        currentDisplayType = 'table';
+                    } else if (loadedFiles.length === 1 && loadedFiles[0].extension === 'txt' && loadedFiles[0].displayType === 'text') {
+                        currentDisplayType = 'text';
+                    } else {
+                        currentDisplayType = 'table';
+                    }
+
                     combineAllData();
                     updateFilesDisplay();
                     updateDataView();
@@ -1330,6 +1483,7 @@
             originalData = [];
             filteredData = [];
             columns = [];
+            currentDisplayType = 'table';
             hideDataContainer();
             updateFilesDisplay();
             document.getElementById('searchInput').value = '';
@@ -1378,6 +1532,7 @@
         function hideDataContainer() {
             document.getElementById('controls').style.display = 'none';
             document.getElementById('dataContainer').style.display = 'none';
+            document.getElementById('textContainer').style.display = 'none';
         }
 
         function showError(message) {
