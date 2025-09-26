@@ -21,6 +21,7 @@ import {
 } from '@ant-design/icons';
 import DataProcessing from './DataProcessing';
 import TextProcessing from './TextProcessing';
+import Settings from './Settings';
 
 const { Header, Content, Sider } = Layout;
 const { Title, Paragraph } = Typography;
@@ -63,7 +64,7 @@ const MainLayout: React.FC = () => {
       case 'text-processing':
         return <TextProcessing />;
       case 'settings':
-        return <div>Settings Page Coming Soon...</div>;
+        return <Settings />;
       default:
         return <HomePage onNavigate={setCurrentPage} />;
     }

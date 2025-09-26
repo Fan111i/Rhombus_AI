@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ConfigProvider, Layout } from 'antd';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import MainLayout from './components/MainLayout';
@@ -21,6 +21,26 @@ const theme = {
 };
 
 function App() {
+  // Load theme settings on app startup
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('rhombus-theme-settings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+
+      // Apply theme settings to CSS custom properties
+      if (settings.primaryColor) {
+        document.documentElement.style.setProperty('--primary-color', settings.primaryColor);
+      }
+
+      if (settings.backgroundImage) {
+        document.documentElement.style.setProperty('--background-image', `url(${settings.backgroundImage})`);
+      }
+
+      document.documentElement.style.setProperty('--background-overlay', settings.backgroundOverlay ? 'block' : 'none');
+      document.documentElement.style.setProperty('--background-opacity', settings.backgroundOpacity.toString());
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ConfigProvider theme={theme}>

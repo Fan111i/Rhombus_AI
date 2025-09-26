@@ -12,7 +12,6 @@ import {
   Col,
   Progress,
   Modal,
-  Table,
 } from 'antd';
 import {
   EditOutlined,
