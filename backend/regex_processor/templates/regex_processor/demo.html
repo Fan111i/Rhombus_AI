@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rhombus AI - Regex Pattern Matcher Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .pattern-box {
+            background: #2d3748;
+            color: #68d391;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+
+        .replacement-demo {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .original, .replaced {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .original {
+            background: #fed7d7;
+            border-left: 4px solid #e53e3e;
+        }
+
+        .replaced {
+            background: #c6f6d5;
+            border-left: 4px solid #38a169;
+        }
+
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Rhombus AI - Regex Pattern Matcher</h1>
+            <p>Convert natural language to regex patterns using AI</p>
+        </div>
+
+        <form id="regexForm">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="description">Describe what you want to find:</label>
+                <input type="text"
+                       id="description"
+                       name="description"
+                       placeholder="e.g., find email addresses, phone numbers, dates..."
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label for="sample_text">Sample text to test (optional):</label>
+                <textarea id="sample_text"
+                         name="sample_text"
+                         placeholder="Enter some text to test the pattern on..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="replacement">Replacement text (optional):</label>
+                <input type="text"
+                       id="replacement"
+                       name="replacement"
+                       placeholder="e.g., REDACTED, [HIDDEN], ***">
+            </div>
+
+            <button type="submit" class="btn">✨ Generate Regex Pattern</button>
+        </form>
+
+        <div class="loading" id="loading">
+            <p>🤖 AI is thinking...</p>
+        </div>
+
+        <div id="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        document.getElementById('regexForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const description = document.getElementById('description').value;
+            const sampleText = document.getElementById('sample_text').value;
+            const replacement = document.getElementById('replacement').value;
+
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+
+            loading.style.display = 'block';
+            result.style.display = 'none';
+
+            try {
+                // Get regex pattern
+                const response = await fetch('/api/convert-to-regex/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        description: description
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    let resultHTML = `
+                        <div class="result">
+                            <h3>✅ Generated Regex Pattern:</h3>
+                            <div class="pattern-box">${data.pattern}</div>
+                            <p><strong>Description:</strong> ${data.description}</p>
+                    `;
+
+                    // Test replacement if sample text provided
+                    if (sampleText) {
+                        try {
+                            const requestData = {
+                                pattern: data.pattern,
+                                replacement: replacement || '[MATCH]',
+                                sample_text: sampleText
+                            };
+
+                            const replaceResponse = await fetch('/api/test-replacement/', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                                },
+                                body: JSON.stringify(requestData)
+                            });
+
+                            const replaceData = await replaceResponse.json();
+
+                            if (replaceData.success) {
+                                resultHTML += `
+                                    <div class="replacement-demo">
+                                        <h4>🔄 Replacement Demo:</h4>
+                                        <div class="original">
+                                            <strong>Original:</strong> ${replaceData.original}
+                                        </div>
+                                        <div class="replaced">
+                                            <strong>Result:</strong> ${replaceData.result}
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        } catch (replaceError) {
+                            console.error('Replacement test failed:', replaceError);
+                        }
+                    }
+
+                    resultHTML += '</div>';
+                    result.innerHTML = resultHTML;
+                } else {
+                    result.innerHTML = `
+                        <div class="error">
+                            <strong>❌ Error:</strong> ${data.error}
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                result.innerHTML = `
+                    <div class="error">
+                        <strong>❌ Error:</strong> Failed to connect to server
+                    </div>
+                `;
+            }
+
+            loading.style.display = 'none';
+            result.style.display = 'block';
+        });
+    </script>
+</body>
+</html>

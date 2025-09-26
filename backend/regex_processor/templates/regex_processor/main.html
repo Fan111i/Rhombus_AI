@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rhombus AI - Smart Regex Pattern Matcher</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 18px;
+        }
+
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            gap: 20px;
+        }
+
+        .mode-button {
+            padding: 15px 30px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 200px;
+        }
+
+        .mode-button:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .mode-button.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .content-area {
+            min-height: 400px;
+        }
+
+        /* Input Mode Styles */
+        .input-mode {
+            display: none;
+        }
+
+        .input-mode.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .generate-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            width: 100%;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .result {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 5px solid #28a745;
+        }
+
+        .error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+
+        .pattern-box {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            color: #495057;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+
+        .replacement-demo {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .original, .replaced {
+            margin: 8px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .original {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+
+        .replaced {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+        }
+
+        /* Upload Mode Styles */
+        .upload-mode {
+            display: none;
+        }
+
+        .upload-mode.active {
+            display: block;
+        }
+
+        .upload-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            border: 2px dashed #6c757d;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+        }
+
+        .upload-section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            margin: 15px 0;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-input-button {
+            background: #667eea;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .file-input-button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .file-info {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #6c757d;
+        }
+
+        .data-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .data-section.active {
+            display: block;
+        }
+
+        .file-details {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 5px solid #28a745;
+        }
+
+        .ready-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .ready-button:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .data-preview {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th, .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #495057;
+            position: sticky;
+            top: 0;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .processing-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .processing-section.active {
+            display: block;
+        }
+
+        .column-selector {
+            margin-bottom: 20px;
+        }
+
+        .column-selector select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .text-container {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 0;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {transform: translateY(-50px); opacity: 0;}
+            to {transform: translateY(0); opacity: 1;}
+        }
+
+        .modal-header {
+            padding: 20px 25px 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-title {
+            margin: 0;
+            color: #333;
+            font-size: 1.3em;
+        }
+
+        .modal-body {
+            padding: 20px 25px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .modal-actions {
+            padding: 15px 25px 20px;
+            text-align: right;
+            border-top: 1px solid #eee;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: all 0.3s;
+        }
+
+        .modal-btn.secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .modal-btn.primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        .file-status {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .file-status.active {
+            display: block;
+        }
+
+        .upload-mode-selector {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .mode-btn {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            color: #495057;
+            padding: 8px 16px;
+            margin: 0 5px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .mode-btn.active {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    {% csrf_token %}
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Rhombus AI</h1>
+            <p>Smart Regex Pattern Matcher - Convert natural language to regex patterns using AI</p>
+        </div>
+
+        <div class="mode-selector">
+            <button class="mode-button active" onclick="switchMode('input')">
+                ✏️ Input Mode
+            </button>
+            <button class="mode-button" onclick="switchMode('upload')">
+                📁 Upload Mode
+            </button>
+        </div>
+
+        <div class="content-area">
+            <!-- Input Mode -->
+            <div class="input-mode active" id="inputMode">
+                <form id="regexForm">
+                    <div class="form-group">
+                        <label for="description">Describe what you want to find:</label>
+                        <input type="text" id="description" name="description"
+                               placeholder="e.g., find exactly test@gmail.com or find all email addresses" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sample_text">Sample text to test (optional):</label>
+                        <textarea id="sample_text" name="sample_text"
+                                  placeholder="Enter text to test your pattern against..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="replacement">Replacement text (optional):</label>
+                        <input type="text" id="replacement" name="replacement"
+                               placeholder="Text to replace matches with...">
+                    </div>
+
+                    <button type="submit" class="generate-btn">✨ Generate Regex Pattern</button>
+                </form>
+
+                <div class="loading" id="loading">
+                    🔄 Generating pattern...
+                </div>
+
+                <div class="result" id="result">
+                    <!-- Results will be displayed here -->
+                </div>
+            </div>
+
+            <!-- Upload Mode -->
+            <div class="upload-mode" id="uploadMode">
+                <div class="file-status" id="fileStatus">
+                    <strong>📁 Current Files:</strong>
+                    <div id="filesList"></div>
+                </div>
+
+                <div class="upload-section">
+                    <h3>📂 Upload Your Data File</h3>
+                    <p>Support formats: CSV, Excel, JSON, TXT, TSV</p>
+
+                    <div class="upload-mode-selector" id="uploadModeSelector" style="display: none;">
+                        <span style="margin-right: 15px; color: #666;">Upload Mode:</span>
+                        <button class="mode-btn active" onclick="setUploadMode('replace')">🔄 Replace</button>
+                        <button class="mode-btn" onclick="setUploadMode('add')">➕ Add</button>
+                        <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                            <strong>Replace:</strong> Replace all current files | <strong>Add:</strong> Add to existing files (same format only)
+                        </div>
+                    </div>
+
+                    <div class="file-input-wrapper">
+                        <input type="file" id="fileInput" class="file-input"
+                               accept=".csv,.xlsx,.xls,.json,.txt,.tsv">
+                        <label for="fileInput" class="file-input-button">
+                            Choose File
+                        </label>
+                    </div>
+
+                    <div class="file-info">
+                        <p>Max size: 10MB | Supported: CSV, Excel, JSON, TXT, TSV</p>
+                    </div>
+                </div>
+
+                <div class="data-section" id="dataSection">
+                    <div class="file-details" id="fileDetails">
+                        <!-- File details will be shown here -->
+                    </div>
+
+                    <button class="ready-button" id="readyButton" onclick="enterProcessingMode()">
+                        🚀 Ready to Process
+                    </button>
+
+                    <div class="data-preview" id="dataPreview">
+                        <!-- Data preview will be shown here -->
+                    </div>
+                </div>
+
+                <div class="processing-section" id="processingSection">
+                    <h3>🔧 Pattern Matching and Replacement</h3>
+                    <p style="color: #666; margin-bottom: 20px;">
+                        📝 Describe what pattern you want to find, then specify the replacement value.
+                    </p>
+
+                    <div class="column-info" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <strong>📊 Available columns:</strong> <span id="availableColumns"></span>
+                    </div>
+
+                    <form id="processForm">
+                        <div class="form-group">
+                            <label for="processDescription">Pattern description (natural language):</label>
+                            <input type="text" id="processDescription" name="description"
+                                   placeholder="e.g., find email addresses" required>
+                            <small style="color: #666; font-style: italic;">
+                                💡 Examples: "find email addresses", "find phone numbers", "find URLs"
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="processReplacement">Replacement value:</label>
+                            <input type="text" id="processReplacement" name="replacement"
+                                   placeholder="e.g., REDACTED" required>
+                            <small style="color: #666; font-style: italic;">
+                                💡 What to replace the matched patterns with
+                            </small>
+                        </div>
+
+                        <button type="submit" class="generate-btn">🎯 Apply Pattern Matching & Replacement</button>
+                    </form>
+
+                    <div class="loading" id="processLoading">
+                        🔄 Processing data...
+                    </div>
+
+                    <div class="result" id="processResult">
+                        <!-- Processing results will be displayed here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Confirm Action</h3>
+            </div>
+            <div class="modal-body">
+                <p id="modalText">Are you sure you want to proceed?</p>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" onclick="closeModal()">Cancel</button>
+                <button class="modal-btn primary" id="modalConfirmBtn" onclick="confirmAction()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentData = null;
+        let currentColumns = [];
+        let loadedFiles = [];
+        let currentUploadMode = 'replace';
+        let pendingAction = null;
+
+        function switchMode(mode) {
+            // Update button states
+            document.querySelectorAll('.mode-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Switch content
+            document.querySelectorAll('.input-mode, .upload-mode').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            if (mode === 'input') {
+                document.getElementById('inputMode').classList.add('active');
+            } else {
+                document.getElementById('uploadMode').classList.add('active');
+            }
+        }
+
+        // Input Mode functionality
+        document.getElementById('regexForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const description = document.getElementById('description').value;
+            const sampleText = document.getElementById('sample_text').value;
+            const replacement = document.getElementById('replacement').value;
+
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+
+            loading.style.display = 'block';
+            result.style.display = 'none';
+
+            try {
+                // Get regex pattern
+                const response = await fetch('/api/convert-to-regex/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        description: description
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    let resultHTML = `
+                        <div class="result">
+                            <h3>✅ Generated Regex Pattern:</h3>
+                            <div class="pattern-box">${data.pattern}</div>
+                            <p><strong>Description:</strong> ${data.description}</p>
+                    `;
+
+                    // Test replacement if sample text provided
+                    if (sampleText) {
+                        try {
+                            const requestData = {
+                                pattern: data.pattern,
+                                replacement: replacement || '[MATCH]',
+                                sample_text: sampleText
+                            };
+
+                            const replaceResponse = await fetch('/api/test-replacement/', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                                },
+                                body: JSON.stringify(requestData)
+                            });
+
+                            const replaceData = await replaceResponse.json();
+
+                            if (replaceData.success) {
+                                resultHTML += `
+                                    <div class="replacement-demo">
+                                        <h4>🔄 Replacement Demo:</h4>
+                                        <div class="original">
+                                            <strong>Original:</strong> ${replaceData.original}
+                                        </div>
+                                        <div class="replaced">
+                                            <strong>Result:</strong> ${replaceData.result}
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        } catch (replaceError) {
+                            console.error('Replacement test failed:', replaceError);
+                        }
+                    }
+
+                    resultHTML += '</div>';
+                    result.innerHTML = resultHTML;
+                } else {
+                    result.innerHTML = `
+                        <div class="error">
+                            <strong>❌ Error:</strong> ${data.error}
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                result.innerHTML = `
+                    <div class="error">
+                        <strong>❌ Error:</strong> Failed to connect to server
+                    </div>
+                `;
+            }
+
+            loading.style.display = 'none';
+            result.style.display = 'block';
+        });
+
+        // Modal functions
+        function showConfirmationModal(title, text, confirmCallback) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalText').textContent = text;
+            document.getElementById('confirmationModal').style.display = 'block';
+            pendingAction = confirmCallback;
+        }
+
+        function closeModal() {
+            document.getElementById('confirmationModal').style.display = 'none';
+            pendingAction = null;
+        }
+
+        function confirmAction() {
+            if (pendingAction) {
+                pendingAction();
+                pendingAction = null;
+            }
+            closeModal();
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('confirmationModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Upload mode functions
+        function setUploadMode(mode) {
+            currentUploadMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function getFileType(extension) {
+            const typeMap = {
+                'csv': 'csv',
+                'tsv': 'csv',
+                'xlsx': 'excel',
+                'xls': 'excel',
+                'json': 'json',
+                'txt': 'text',
+                'xml': 'xml'
+            };
+            return typeMap[extension] || 'unknown';
+        }
+
+        function areFilesCompatible(type1, type2) {
+            // CSV and TSV are compatible
+            if ((type1 === 'csv' && type2 === 'csv')) return true;
+            // Excel files are compatible with each other
+            if (type1 === 'excel' && type2 === 'excel') return true;
+            // Other types must match exactly
+            return type1 === type2;
+        }
+
+        function analyzeColumnCompatibility(existingColumns, newColumns) {
+            const existing = new Set(existingColumns);
+            const newCols = new Set(newColumns);
+
+            const common = [...existing].filter(col => newCols.has(col));
+            const onlyInExisting = [...existing].filter(col => !newCols.has(col));
+            const onlyInNew = [...newCols].filter(col => !existing.has(col));
+
+            return {
+                common,
+                onlyInExisting,
+                onlyInNew,
+                isFullMatch: onlyInExisting.length === 0 && onlyInNew.length === 0,
+                hasCommon: common.length > 0,
+                compatibilityScore: common.length / Math.max(existing.size, newCols.size)
+            };
+        }
+
+        function updateFileStatus() {
+            const fileStatus = document.getElementById('fileStatus');
+            const filesList = document.getElementById('filesList');
+            const uploadModeSelector = document.getElementById('uploadModeSelector');
+
+            if (loadedFiles.length > 0) {
+                fileStatus.classList.add('active');
+                uploadModeSelector.style.display = 'block';
+
+                let filesHTML = '';
+                loadedFiles.forEach((file, index) => {
+                    filesHTML += `
+                        <div style="margin: 5px 0; padding: 8px; background: white; border-radius: 4px; font-size: 14px;">
+                            📄 ${file.name} (${file.type.toUpperCase()}, ${file.rowCount} rows, ${file.columnCount} columns)
+                            <button onclick="removeFile(${index})" style="float: right; background: #dc3545; color: white; border: none; border-radius: 3px; padding: 2px 8px; cursor: pointer;">Remove</button>
+                        </div>
+                    `;
+                });
+                filesList.innerHTML = filesHTML;
+            } else {
+                fileStatus.classList.remove('active');
+                uploadModeSelector.style.display = 'none';
+                filesList.innerHTML = '';
+            }
+        }
+
+        function removeFile(index) {
+            showConfirmationModal(
+                '🗑️ Remove File',
+                `Are you sure you want to remove "${loadedFiles[index].name}"?`,
+                () => {
+                    loadedFiles.splice(index, 1);
+                    updateFileStatus();
+                    if (loadedFiles.length === 0) {
+                        document.getElementById('dataSection').classList.remove('active');
+                        document.getElementById('processingSection').classList.remove('active');
+                    } else {
+                        // Update currentData to merged data
+                        mergeAllFilesData();
+                    }
+                }
+            );
+        }
+
+        function addFileToCollection(file, uploadData, fileExtension, fileType) {
+            const fileInfo = {
+                name: file.name,
+                extension: fileExtension,
+                type: fileType,
+                size: file.size,
+                lastModified: file.lastModified,
+                rowCount: uploadData.data.length,
+                columnCount: uploadData.columns.length,
+                data: uploadData.data,
+                columns: uploadData.columns,
+                displayType: uploadData.display_type || 'table'
+            };
+
+            loadedFiles.push(fileInfo);
+            updateFileStatus();
+            mergeAllFilesData();
+        }
+
+        function mergeAllFilesData() {
+            if (loadedFiles.length === 0) return;
+
+            if (loadedFiles.length === 1) {
+                // Single file - use as is
+                const file = loadedFiles[0];
+                currentData = file.data;
+                currentColumns = file.columns;
+            } else {
+                // Multiple files - smart merge
+                const allColumns = new Set();
+                const allData = [];
+
+                // Collect all unique columns
+                loadedFiles.forEach(file => {
+                    file.columns.forEach(col => allColumns.add(col));
+                });
+
+                currentColumns = Array.from(allColumns).sort();
+
+                // Merge data with null/empty values for missing columns
+                loadedFiles.forEach((file, fileIndex) => {
+                    file.data.forEach(row => {
+                        const mergedRow = {};
+
+                        // Initialize all columns
+                        currentColumns.forEach(col => {
+                            mergedRow[col] = row[col] || '';
+                        });
+
+                        // Add file source information for tracking
+                        mergedRow._source_file = file.name;
+                        mergedRow._source_index = fileIndex;
+
+                        allData.push(mergedRow);
+                    });
+                });
+
+                currentData = allData;
+            }
+
+            // Update display
+            displayMergedData();
+        }
+
+        function displayMergedData() {
+            const totalRows = currentData.length;
+            const totalFiles = loadedFiles.length;
+
+            let detailsHTML = `<h4>📊 Merged Dataset</h4>`;
+
+            if (totalFiles === 1) {
+                const file = loadedFiles[0];
+                detailsHTML += `
+                    <p><strong>File:</strong> ${file.name}</p>
+                    <p><strong>Rows:</strong> ${totalRows} | <strong>Columns:</strong> ${currentColumns.length}</p>
+                `;
+            } else {
+                detailsHTML += `
+                    <p><strong>Files:</strong> ${totalFiles} | <strong>Total Rows:</strong> ${totalRows} | <strong>Merged Columns:</strong> ${currentColumns.length}</p>
+                `;
+
+                // Show column analysis for multiple files
+                const allFileColumns = loadedFiles.map(f => new Set(f.columns));
+                const commonColumns = currentColumns.filter(col =>
+                    allFileColumns.every(fileCols => fileCols.has(col))
+                );
+                const partialColumns = currentColumns.filter(col =>
+                    !allFileColumns.every(fileCols => fileCols.has(col)) &&
+                    allFileColumns.some(fileCols => fileCols.has(col))
+                );
+
+                if (commonColumns.length > 0) {
+                    detailsHTML += `<p><strong>✅ Common columns (${commonColumns.length}):</strong> ${commonColumns.join(', ')}</p>`;
+                }
+                if (partialColumns.length > 0) {
+                    detailsHTML += `<p><strong>⚠️ Partial columns (${partialColumns.length}):</strong> ${partialColumns.join(', ')}</p>`;
+                }
+
+                // Show file breakdown
+                detailsHTML += `<div style="margin-top: 10px; font-size: 14px;">`;
+                loadedFiles.forEach((file, index) => {
+                    detailsHTML += `<div style="margin: 2px 0;">📄 ${file.name}: ${file.rowCount} rows, ${file.columnCount} columns</div>`;
+                });
+                detailsHTML += `</div>`;
+            }
+
+            detailsHTML += `<p><strong>All Columns:</strong> ${currentColumns.join(', ')}</p>`;
+
+            // Show file details
+            document.getElementById('fileDetails').innerHTML = detailsHTML;
+
+            // Show data preview
+            displayDataPreview(currentData, currentColumns);
+
+            // Show data section
+            document.getElementById('dataSection').classList.add('active');
+        }
+
+        async function handleFileUploadSuccess(file, uploadData) {
+            const fileExtension = file.name.toLowerCase().split('.').pop();
+            const fileType = getFileType(fileExtension);
+
+            // Check compatibility with existing files
+            if (loadedFiles.length > 0 && currentUploadMode === 'add') {
+                const existingFileType = getFileType(loadedFiles[0].extension);
+
+                if (!areFilesCompatible(fileType, existingFileType)) {
+                    showConfirmationModal(
+                        '⚠️ Incompatible File Types',
+                        `This ${fileType} file is not compatible with your loaded ${existingFileType} files. Do you want to replace all files with this new one?`,
+                        () => {
+                            loadedFiles = [];
+                            addFileToCollection(file, uploadData, fileExtension, fileType);
+                        }
+                    );
+                    return;
+                }
+
+                // Check column compatibility for CSV files
+                if (fileType === 'csv' && existingFileType === 'csv') {
+                    const existingColumns = loadedFiles[0].columns;
+                    const newColumns = uploadData.columns;
+                    const compatibility = analyzeColumnCompatibility(existingColumns, newColumns);
+
+                    if (!compatibility.isFullMatch) {
+                        let message = `This CSV file has different columns than your existing files:\n\n`;
+
+                        if (compatibility.common.length > 0) {
+                            message += `✅ Common columns (${compatibility.common.length}): ${compatibility.common.join(', ')}\n`;
+                        }
+
+                        if (compatibility.onlyInExisting.length > 0) {
+                            message += `📤 Only in existing files: ${compatibility.onlyInExisting.join(', ')}\n`;
+                        }
+
+                        if (compatibility.onlyInNew.length > 0) {
+                            message += `📥 Only in new file: ${compatibility.onlyInNew.join(', ')}\n`;
+                        }
+
+                        const compatibilityPercent = Math.round(compatibility.compatibilityScore * 100);
+                        message += `\n🎯 Compatibility: ${compatibilityPercent}%\n\n`;
+
+                        if (compatibility.hasCommon) {
+                            message += `The files will be merged with empty values for missing columns. Continue?`;
+                            showConfirmationModal(
+                                '📊 Column Structure Difference',
+                                message,
+                                () => {
+                                    addFileToCollection(file, uploadData, fileExtension, fileType);
+                                }
+                            );
+                        } else {
+                            message += `No common columns found! Do you want to replace all files instead?`;
+                            showConfirmationModal(
+                                '❌ No Common Columns',
+                                message,
+                                () => {
+                                    loadedFiles = [];
+                                    addFileToCollection(file, uploadData, fileExtension, fileType);
+                                }
+                            );
+                        }
+                        return;
+                    }
+                }
+            }
+
+            // If replace mode or no existing files, clear existing
+            if (currentUploadMode === 'replace' || loadedFiles.length === 0) {
+                if (loadedFiles.length > 0) {
+                    showConfirmationModal(
+                        '🔄 Replace Files',
+                        'This will replace all currently loaded files. Are you sure?',
+                        () => {
+                            loadedFiles = [];
+                            addFileToCollection(file, uploadData, fileExtension, fileType);
+                        }
+                    );
+                    return;
+                } else {
+                    loadedFiles = [];
+                }
+            }
+
+            addFileToCollection(file, uploadData, fileExtension, fileType);
+        }
+
+        // Upload Mode functionality
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                uploadFile(file);
+            }
+        });
+
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/upload-file/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    await handleFileUploadSuccess(file, data);
+                } else {
+                    alert('Error uploading file: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error uploading file: ' + error.message);
+            }
+        }
+
+        function displayDataPreview(data, columns) {
+            let html = '<table class="data-table"><thead><tr>';
+
+            columns.forEach(col => {
+                html += `<th>${col}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            // Show first 10 rows
+            const previewData = data.slice(0, 10);
+            previewData.forEach(row => {
+                html += '<tr>';
+                columns.forEach(col => {
+                    const value = row[col] || '';
+                    html += `<td>${String(value).substring(0, 100)}${String(value).length > 100 ? '...' : ''}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            if (data.length > 10) {
+                html += `<tr><td colspan="${columns.length}" style="text-align: center; font-style: italic; color: #666;">... and ${data.length - 10} more rows</td></tr>`;
+            }
+
+            html += '</tbody></table>';
+
+            document.getElementById('dataPreview').innerHTML = html;
+        }
+
+        function enterProcessingMode() {
+            if (loadedFiles.length === 0) {
+                alert('Please upload at least one file first.');
+                return;
+            }
+
+            // Ensure data is merged
+            mergeAllFilesData();
+
+            // Display available columns
+            document.getElementById('availableColumns').textContent = currentColumns.join(', ');
+
+            // Show processing section
+            document.getElementById('processingSection').classList.add('active');
+        }
+
+        // Process Form functionality
+        document.getElementById('processForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            console.log('Form submitted');
+
+            const description = document.getElementById('processDescription').value;
+            const replacement = document.getElementById('processReplacement').value;
+            console.log('Description:', description, 'Replacement:', replacement);
+
+            const loading = document.getElementById('processLoading');
+            const result = document.getElementById('processResult');
+            console.log('DOM elements found:', {loading: !!loading, result: !!result});
+
+            if (!loading || !result) {
+                console.error('Required DOM elements not found');
+                alert('Error: Page elements not found. Please refresh the page.');
+                return;
+            }
+
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            console.log('Loading shown, result hidden');
+
+            try {
+                // First generate the regex pattern
+                const patternResponse = await fetch('/api/convert-to-regex/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        description: description,
+                        context: 'Pattern matching in uploaded data'
+                    })
+                });
+
+                const patternResult = await patternResponse.json();
+
+                if (!patternResult.success) {
+                    result.innerHTML = `
+                        <div class="error">
+                            <strong>❌ Error:</strong> ${patternResult.error}
+                        </div>
+                    `;
+                    loading.style.display = 'none';
+                    result.style.display = 'block';
+                    return;
+                }
+
+                // Apply the pattern to all text columns
+                const processResponse = await fetch('/api/process-data/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        data: currentData,
+                        pattern: patternResult.pattern,
+                        replacement: replacement,
+                        apply_to_all_columns: true  // Apply to all text columns
+                    })
+                });
+
+                const queryResult = await processResponse.json();
+
+                if (queryResult.success) {
+                    console.log('Processing successful:', queryResult);
+                    result.className = 'result';  // Ensure result class is applied
+                    let resultHTML = `
+                        <h3>✅ Pattern Matching & Replacement Results:</h3>
+                        <p><strong>Pattern Description:</strong> ${description}</p>
+                        <p><strong>Generated Regex:</strong> <code>${patternResult.pattern}</code></p>
+                        <p><strong>Replacement Value:</strong> ${replacement}</p>
+                        <p><strong>Matches Found:</strong> ${queryResult.matches_count}</p>
+                        <p><strong>Rows Affected:</strong> ${queryResult.affected_rows} out of ${queryResult.total_rows}</p>
+                    `;
+
+                    if (queryResult.affected_columns && queryResult.affected_columns.length > 0) {
+                        resultHTML += `<p><strong>Columns Modified:</strong> ${queryResult.affected_columns.join(', ')}</p>`;
+                    }
+
+                    if (queryResult.processed_data && queryResult.processed_data.length > 0) {
+                        resultHTML += `
+                            <div class="replacement-demo">
+                                <h4>🔄 Processed Data:</h4>
+                                <div class="data-preview">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                        `;
+
+                        currentColumns.forEach(col => {
+                            resultHTML += `<th>${col}</th>`;
+                        });
+
+                        resultHTML += `
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                        `;
+
+                        // Show the processed data
+                        const previewResults = queryResult.processed_data.slice(0, 10);
+                        previewResults.forEach((row, index) => {
+                            // Check if any column in this row was modified
+                            let rowModified = false;
+                            const originalRow = currentData[index];
+
+                            if (originalRow) {
+                                for (let col of currentColumns) {
+                                    if (String(originalRow[col] || '') !== String(row[col] || '')) {
+                                        rowModified = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            resultHTML += `<tr ${rowModified ? 'style="background-color: #d1ecf1;"' : ''}>`;
+                            currentColumns.forEach(col => {
+                                const value = row[col] || '';
+                                const originalValue = originalRow ? (originalRow[col] || '') : '';
+                                const isModified = String(originalValue) !== String(value);
+
+                                resultHTML += `<td ${isModified ? 'style="font-weight: bold; color: #0066cc;"' : ''}>${String(value).substring(0, 100)}${String(value).length > 100 ? '...' : ''}</td>`;
+                            });
+                            resultHTML += '</tr>';
+                        });
+
+                        if (queryResult.processed_data.length > 10) {
+                            resultHTML += `<tr><td colspan="${currentColumns.length}" style="text-align: center; font-style: italic; color: #666;">... and ${queryResult.processed_data.length - 10} more rows</td></tr>`;
+                        }
+
+                        resultHTML += `
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p style="margin-top: 15px; color: #666; font-style: italic;">
+                                    💡 Modified cells are highlighted in blue, modified rows have blue background.
+                                </p>
+                            </div>
+                        `;
+                    } else {
+                        resultHTML += `
+                            <div class="replacement-demo">
+                                <p>ℹ️ No matches found for the given pattern.</p>
+                            </div>
+                        `;
+                    }
+
+                    result.innerHTML = resultHTML;
+                    console.log('Result HTML set:', resultHTML);
+                } else {
+                    result.className = 'result error';  // Apply both result and error classes
+                    result.innerHTML = `
+                        <strong>❌ Error:</strong> ${queryResult.error}
+                        ${queryResult.suggestions ? '<br><strong>Suggestions:</strong> ' + queryResult.suggestions.join(', ') : ''}
+                    `;
+                }
+
+            } catch (error) {
+                console.error('Processing error:', error);
+                result.className = 'result error';  // Apply both result and error classes
+                result.innerHTML = `
+                    <strong>❌ Error:</strong> Failed to process data: ${error.message}
+                `;
+            }
+
+            console.log('Hiding loading, showing result');
+            loading.style.display = 'none';
+            result.style.display = 'block';
+        });
+    </script>
+</body>
+</html>
