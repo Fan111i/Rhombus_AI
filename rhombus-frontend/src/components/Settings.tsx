@@ -10,7 +10,6 @@ import {
   Col,
   Divider,
   Switch,
-  message,
   Modal,
   Tag,
 } from 'antd';
@@ -55,8 +54,13 @@ const Settings: React.FC = () => {
     if (savedSettings) {
       try {
         const settings = JSON.parse(savedSettings);
-        setThemeSettings(settings);
-        setBackgroundImage(settings.backgroundImage);
+        setThemeSettings({
+          primaryColor: settings.primaryColor || '#667eea',
+          backgroundImage: settings.backgroundImage || null,
+          backgroundOverlay: settings.backgroundOverlay !== false,
+          backgroundOpacity: settings.backgroundOpacity || 0.3,
+        });
+        setBackgroundImage(settings.backgroundImage || null);
       } catch (error) {
         console.error('Failed to parse saved settings:', error);
       }
@@ -126,15 +130,26 @@ const Settings: React.FC = () => {
     });
   };
 
+  const showSuccessMessage = (msg: string) => {
+    Modal.success({
+      title: 'Success',
+      content: String(msg),
+    });
+  };
+
+  const showErrorMessage = (title: string, msg: string) => {
+    Modal.error({
+      title: String(title),
+      content: String(msg),
+    });
+  };
+
   const handleImageUpload = async (file: File) => {
     try {
       const validation = await validateImage(file);
 
       if (!validation.valid) {
-        Modal.error({
-          title: 'Invalid Image',
-          content: validation.error,
-        });
+        showErrorMessage('Invalid Image', validation.error || 'Unknown error');
         return false;
       }
 
@@ -143,23 +158,23 @@ const Settings: React.FC = () => {
       reader.onload = (e) => {
         const base64 = e.target?.result as string;
         setBackgroundImage(base64);
+
+        const dims = validation.dimensions!;
         setImageInfo({
-          name: file.name,
-          size: file.size,
-          dimensions: validation.dimensions!,
+          name: String(file.name),
+          size: Number(file.size),
+          dimensions: { width: Number(dims.width), height: Number(dims.height) },
         });
 
-        message.success(`Background image uploaded successfully! Resolution: ${validation.dimensions!.width}x${validation.dimensions!.height}`);
+        const successMsg = `Background image uploaded successfully! Resolution: ${dims.width}x${dims.height}`;
+        showSuccessMessage(successMsg);
       };
       reader.readAsDataURL(file);
     } catch (error) {
-      Modal.error({
-        title: 'Upload Error',
-        content: 'Failed to process the image. Please try again.',
-      });
+      showErrorMessage('Upload Error', 'Failed to process the image. Please try again.');
     }
 
-    return false; // Prevent default upload behavior
+    return false;
   };
 
   const handleRemoveImage = () => {
@@ -171,7 +186,7 @@ const Settings: React.FC = () => {
       onOk: () => {
         setBackgroundImage(null);
         setImageInfo(null);
-        message.success('Background image removed successfully!');
+        showSuccessMessage('Background image removed successfully!');
       },
     });
   };
@@ -197,43 +212,66 @@ const Settings: React.FC = () => {
     }));
   };
 
+  const applyThemeSettings = (settings: ThemeSettings) => {
+    const root = document.documentElement;
+
+    // Force clear existing properties first
+    root.style.removeProperty('--primary-color');
+    root.style.removeProperty('--background-image');
+    root.style.removeProperty('--background-overlay');
+    root.style.removeProperty('--background-opacity');
+
+    // Force a reflow to ensure clearing is processed
+    void root.offsetHeight;
+
+    // Apply new theme properties
+    root.style.setProperty('--primary-color', settings.primaryColor);
+
+    if (settings.backgroundImage) {
+      root.style.setProperty('--background-image', `url(${settings.backgroundImage})`);
+      root.style.setProperty('--background-overlay', settings.backgroundOverlay ? 'block' : 'none');
+      root.style.setProperty('--background-opacity', settings.backgroundOpacity.toString());
+    } else {
+      root.style.setProperty('--background-image', 'none');
+      root.style.setProperty('--background-overlay', 'none');
+      root.style.setProperty('--background-opacity', '0.3');
+    }
+
+    // Force repaint by temporarily changing a harmless property
+    const appContainer = document.querySelector('.app-container') as HTMLElement;
+    if (appContainer) {
+      const originalTransform = appContainer.style.transform;
+      appContainer.style.transform = 'translateZ(0)';
+      void appContainer.offsetHeight;
+      appContainer.style.transform = originalTransform;
+    }
+
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent('themeUpdated', { detail: settings }));
+  };
+
   const handleSaveSettings = () => {
-    const finalSettings = {
-      ...themeSettings,
-      backgroundImage,
+    const finalSettings: ThemeSettings = {
+      primaryColor: themeSettings.primaryColor,
+      backgroundImage: backgroundImage,
+      backgroundOverlay: themeSettings.backgroundOverlay,
+      backgroundOpacity: themeSettings.backgroundOpacity,
     };
 
     localStorage.setItem('rhombus-theme-settings', JSON.stringify(finalSettings));
 
-    // Apply theme to document root immediately
-    document.documentElement.style.setProperty('--primary-color', finalSettings.primaryColor);
+    // Apply theme with forced rendering
+    setTimeout(() => {
+      applyThemeSettings(finalSettings);
 
-    if (finalSettings.backgroundImage) {
-      document.documentElement.style.setProperty('--background-image', `url(${finalSettings.backgroundImage})`);
-      document.documentElement.style.setProperty('--background-overlay', finalSettings.backgroundOverlay ? 'block' : 'none');
-      document.documentElement.style.setProperty('--background-opacity', finalSettings.backgroundOpacity.toString());
-    } else {
-      document.documentElement.style.removeProperty('--background-image');
-      document.documentElement.style.removeProperty('--background-overlay');
-      document.documentElement.style.removeProperty('--background-opacity');
-    }
-
-    // Force re-render by triggering a style recalculation
-    document.body.style.display = 'none';
-    void document.body.offsetHeight; // Trigger reflow - used for side effect
-    document.body.style.display = '';
-
-    // Update the theme settings state to ensure consistency
-    setThemeSettings(finalSettings);
-
-    Modal.success({
-      title: '🎉 Settings Saved & Applied',
-      content: 'Your theme settings have been saved and applied immediately!',
-      onOk: () => {
-        // Additional force update if needed
+      // Additional repaint trigger
+      requestAnimationFrame(() => {
         window.dispatchEvent(new Event('resize'));
-      }
-    });
+      });
+    }, 0);
+
+    setThemeSettings(finalSettings);
+    showSuccessMessage('Your theme settings have been saved and applied immediately!');
   };
 
   const handleResetSettings = () => {
@@ -243,7 +281,7 @@ const Settings: React.FC = () => {
       okText: 'Reset',
       okType: 'danger',
       onOk: () => {
-        const defaultSettings = {
+        const defaultSettings: ThemeSettings = {
           primaryColor: '#667eea',
           backgroundImage: null,
           backgroundOverlay: true,
@@ -255,12 +293,14 @@ const Settings: React.FC = () => {
         setImageInfo(null);
 
         localStorage.removeItem('rhombus-theme-settings');
+
+        // Reset CSS properties
         document.documentElement.style.removeProperty('--primary-color');
         document.documentElement.style.removeProperty('--background-image');
         document.documentElement.style.removeProperty('--background-overlay');
         document.documentElement.style.removeProperty('--background-opacity');
 
-        message.success('Settings reset to default values!');
+        showSuccessMessage('Settings reset to default values!');
       },
     });
   };
@@ -333,15 +373,15 @@ const Settings: React.FC = () => {
                   <Space direction="vertical" style={{ width: '100%', marginBottom: 12 }}>
                     <div>
                       <Text strong>File: </Text>
-                      <Text>{imageInfo.name}</Text>
+                      <Text>{String(imageInfo.name)}</Text>
                     </div>
                     <div>
                       <Text strong>Size: </Text>
-                      <Text>{formatFileSize(imageInfo.size)}</Text>
+                      <Text>{formatFileSize(Number(imageInfo.size))}</Text>
                     </div>
                     <div>
                       <Text strong>Resolution: </Text>
-                      <Tag color="blue">{imageInfo.dimensions.width}x{imageInfo.dimensions.height}</Tag>
+                      <Tag color="blue">{Number(imageInfo.dimensions.width)}x{Number(imageInfo.dimensions.height)}</Tag>
                     </div>
                   </Space>
                 )}
@@ -396,8 +436,8 @@ const Settings: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: 8 }}>
                 <input
                   type="color"
-                  value={themeSettings.primaryColor}
-                  onChange={(e) => handlePrimaryColorChange(e.target.value)}
+                  value={String(themeSettings.primaryColor)}
+                  onChange={(e) => handlePrimaryColorChange(String(e.target.value))}
                   style={{
                     width: '50px',
                     height: '40px',
@@ -407,7 +447,7 @@ const Settings: React.FC = () => {
                   }}
                 />
                 <span style={{ fontSize: '14px', color: '#666' }}>
-                  Current: {themeSettings.primaryColor}
+                  Current: {String(themeSettings.primaryColor)}
                 </span>
               </div>
             </div>
@@ -418,22 +458,22 @@ const Settings: React.FC = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text strong>Background Overlay</Text>
                 <Switch
-                  checked={themeSettings.backgroundOverlay}
-                  onChange={handleOverlayChange}
+                  checked={Boolean(themeSettings.backgroundOverlay)}
+                  onChange={(checked) => handleOverlayChange(Boolean(checked))}
                 />
               </div>
             </div>
 
             <div style={{ marginBottom: 24 }}>
-              <Text strong>Background Opacity ({Math.round(themeSettings.backgroundOpacity * 100)}%)</Text>
+              <Text strong>Background Opacity ({Math.round(Number(themeSettings.backgroundOpacity) * 100)}%)</Text>
               <div style={{ marginTop: 8 }}>
                 <input
                   type="range"
                   min="0"
                   max="1"
                   step="0.1"
-                  value={themeSettings.backgroundOpacity}
-                  onChange={(e) => handleOpacityChange(parseFloat(e.target.value))}
+                  value={Number(themeSettings.backgroundOpacity)}
+                  onChange={(e) => handleOpacityChange(Number(parseFloat(e.target.value)))}
                   style={{ width: '100%' }}
                 />
               </div>
