@@ -17,13 +17,15 @@ import {
   RobotOutlined,
   FileTextOutlined,
   ThunderboltOutlined,
+  EditOutlined,
 } from '@ant-design/icons';
 import DataProcessing from './DataProcessing';
+import TextProcessing from './TextProcessing';
 
 const { Header, Content, Sider } = Layout;
 const { Title, Paragraph } = Typography;
 
-type PageType = 'home' | 'processing' | 'settings';
+type PageType = 'home' | 'processing' | 'text-processing' | 'settings';
 
 const MainLayout: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<PageType>('home');
@@ -38,7 +40,12 @@ const MainLayout: React.FC = () => {
     {
       key: 'processing',
       icon: <DatabaseOutlined />,
-      label: 'Data Processing',
+      label: 'File Processing',
+    },
+    {
+      key: 'text-processing',
+      icon: <EditOutlined />,
+      label: 'Text Processing',
     },
     {
       key: 'settings',
@@ -53,6 +60,8 @@ const MainLayout: React.FC = () => {
         return <HomePage onNavigate={setCurrentPage} />;
       case 'processing':
         return <DataProcessing />;
+      case 'text-processing':
+        return <TextProcessing />;
       case 'settings':
         return <div>Settings Page Coming Soon...</div>;
       default:
@@ -156,37 +165,60 @@ const HomePage: React.FC<{ onNavigate: (page: PageType) => void }> = ({ onNaviga
               </Title>
               <Paragraph style={{ fontSize: '18px', maxWidth: '600px', margin: '0 auto' }}>
                 Transform your data with intelligent regex pattern matching.
-                Upload files, describe patterns in natural language, and let AI do the rest.
+                Upload files or input text directly, describe patterns in natural language, and let AI do the rest.
               </Paragraph>
-              <Button
-                type="primary"
-                size="large"
-                icon={<DatabaseOutlined />}
-                onClick={() => onNavigate('processing')}
-                style={{ height: '48px', fontSize: '16px' }}
-              >
-                Start Processing Data
-              </Button>
+              <Space size="large" direction="horizontal">
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<DatabaseOutlined />}
+                  onClick={() => onNavigate('processing')}
+                  style={{ height: '48px', fontSize: '16px' }}
+                >
+                  📁 File Processing
+                </Button>
+                <Button
+                  type="primary"
+                  size="large"
+                  ghost
+                  icon={<EditOutlined />}
+                  onClick={() => onNavigate('text-processing')}
+                  style={{ height: '48px', fontSize: '16px' }}
+                >
+                  ✍️ Text Processing
+                </Button>
+              </Space>
             </Space>
           </Card>
         </Col>
       </Row>
 
       <Row gutter={[24, 24]}>
-        <Col xs={24} md={8}>
+        <Col xs={24} md={6}>
           <Card className="glass-card" hoverable>
             <Space direction="vertical" align="center">
               <FileTextOutlined style={{ fontSize: '48px', color: '#667eea' }} />
               <Title level={4}>Smart File Upload</Title>
               <Paragraph style={{ textAlign: 'center' }}>
-                Support for CSV, Excel, JSON, TXT, and TSV files with intelligent
-                column compatibility checking.
+                Support for CSV, Excel, JSON, TXT, and TSV files with intelligent processing.
               </Paragraph>
             </Space>
           </Card>
         </Col>
 
-        <Col xs={24} md={8}>
+        <Col xs={24} md={6}>
+          <Card className="glass-card" hoverable>
+            <Space direction="vertical" align="center">
+              <EditOutlined style={{ fontSize: '48px', color: '#667eea' }} />
+              <Title level={4}>Direct Text Input</Title>
+              <Paragraph style={{ textAlign: 'center' }}>
+                Paste or type text directly for quick pattern matching and replacement.
+              </Paragraph>
+            </Space>
+          </Card>
+        </Col>
+
+        <Col xs={24} md={6}>
           <Card className="glass-card" hoverable>
             <Space direction="vertical" align="center">
               <RobotOutlined style={{ fontSize: '48px', color: '#667eea' }} />
@@ -199,14 +231,13 @@ const HomePage: React.FC<{ onNavigate: (page: PageType) => void }> = ({ onNaviga
           </Card>
         </Col>
 
-        <Col xs={24} md={8}>
+        <Col xs={24} md={6}>
           <Card className="glass-card" hoverable>
             <Space direction="vertical" align="center">
               <ThunderboltOutlined style={{ fontSize: '48px', color: '#667eea' }} />
               <Title level={4}>Instant Processing</Title>
               <Paragraph style={{ textAlign: 'center' }}>
-                Apply pattern matching across all text columns with
-                real-time feedback and detailed results.
+                Apply pattern matching with real-time feedback and detailed results.
               </Paragraph>
             </Space>
           </Card>
