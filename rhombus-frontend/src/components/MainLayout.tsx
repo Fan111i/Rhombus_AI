@@ -13,7 +13,6 @@ import {
 import {
   HomeOutlined,
   DatabaseOutlined,
-  HistoryOutlined,
   SettingOutlined,
   RobotOutlined,
   FileTextOutlined,
@@ -24,7 +23,7 @@ import DataProcessing from './DataProcessing';
 const { Header, Content, Sider } = Layout;
 const { Title, Paragraph } = Typography;
 
-type PageType = 'home' | 'processing' | 'history' | 'settings';
+type PageType = 'home' | 'processing' | 'settings';
 
 const MainLayout: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<PageType>('home');
@@ -42,11 +41,6 @@ const MainLayout: React.FC = () => {
       label: 'Data Processing',
     },
     {
-      key: 'history',
-      icon: <HistoryOutlined />,
-      label: 'History',
-    },
-    {
       key: 'settings',
       icon: <SettingOutlined />,
       label: 'Settings',
@@ -59,8 +53,6 @@ const MainLayout: React.FC = () => {
         return <HomePage onNavigate={setCurrentPage} />;
       case 'processing':
         return <DataProcessing />;
-      case 'history':
-        return <div>History Page Coming Soon...</div>;
       case 'settings':
         return <div>Settings Page Coming Soon...</div>;
       default:
@@ -230,7 +222,7 @@ const HomePage: React.FC<{ onNavigate: (page: PageType) => void }> = ({ onNaviga
             <Row gutter={[16, 16]}>
               <Col xs={24} sm={12}>
                 <Space>
-                  ✅ <strong>Multi-file Support</strong> - Merge compatible files
+                  ✅ <strong>Different Modes Support</strong> - You can enter text directly or upload files
                 </Space>
               </Col>
               <Col xs={24} sm={12}>

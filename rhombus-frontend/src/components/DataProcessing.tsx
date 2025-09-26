@@ -46,16 +46,16 @@ interface ProcessResults {
 
 const DataProcessing: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [uploadedFiles, setUploadedFiles] = useState<FileData[]>([]);
+  const [uploadedFile, setUploadedFile] = useState<FileData | null>(null);
   const [loading, setLoading] = useState(false);
   const [processResults, setProcessResults] = useState<ProcessResults | null>(null);
   const [form] = Form.useForm();
 
   const steps = [
     {
-      title: 'Upload Files',
+      title: 'Upload File',
       icon: <InboxOutlined />,
-      description: 'Upload your data files'
+      description: 'Upload your data file'
     },
     {
       title: 'Preview Data',
@@ -74,82 +74,33 @@ const DataProcessing: React.FC = () => {
     },
   ];
 
-  // Smart merge compatibility analysis
-  const analyzeColumnCompatibility = (existingColumns: string[], newColumns: string[]) => {
-    const existing = new Set(existingColumns);
-    const newCols = new Set(newColumns);
-
-    const common = existingColumns.filter(col => newCols.has(col));
-    const onlyInExisting = existingColumns.filter(col => !newCols.has(col));
-    const onlyInNew = newColumns.filter(col => !existing.has(col));
-
-    return {
-      common,
-      onlyInExisting,
-      onlyInNew,
-      isFullMatch: onlyInExisting.length === 0 && onlyInNew.length === 0,
-      hasCommon: common.length > 0,
-      compatibilityScore: common.length / Math.max(existing.size, newCols.size)
-    };
+  // Simple single file data access
+  const getFileData = () => {
+    return uploadedFile ? uploadedFile.data : [];
   };
 
-  // Smart merge all files data
-  const mergeAllFilesData = (files: FileData[]) => {
-    if (files.length === 0) return [];
-    if (files.length === 1) return files[0].data;
-
-    // Multiple files - smart merge
-    const allColumns = new Set<string>();
-    const allData: any[] = [];
-
-    // Collect all unique columns
-    files.forEach(file => {
-      file.columns.forEach(col => allColumns.add(col));
-    });
-
-    const mergedColumns = Array.from(allColumns);
-
-    // Merge data from all files
-    files.forEach(file => {
-      file.data.forEach(row => {
-        const mergedRow: any = {};
-
-        // Initialize all columns with empty values
-        mergedColumns.forEach(col => {
-          mergedRow[col] = '';
-        });
-
-        // Fill in values that exist in this row
-        Object.keys(row).forEach(key => {
-          if (mergedColumns.includes(key)) {
-            mergedRow[key] = row[key];
-          }
-        });
-
-        allData.push(mergedRow);
-      });
-    });
-
-    return allData;
-  };
-
-  const handleFileUpload = async (file: File) => {
+  const processFileUpload = async (file: File) => {
+    console.log('Processing file upload:', file.name, file.size, file.type);
     setLoading(true);
     try {
       const formData = new FormData();
       formData.append('file', file);
 
+      console.log('Sending request to backend...');
       const response = await fetch('http://localhost:8000/api/upload-file/', {
         method: 'POST',
         body: formData,
       });
 
+      console.log('Response status:', response.status);
       const data = await response.json();
+      console.log('Response data:', data);
 
       if (!data.success) {
+        console.error('Upload failed:', data.error);
         Modal.error({ title: 'Upload Failed', content: data.error });
         setLoading(false);
-        return;
+        return null;
       }
 
       const newFile: FileData = {
@@ -159,65 +110,82 @@ const DataProcessing: React.FC = () => {
         rowCount: data.row_count,
       };
 
-      if (uploadedFiles.length === 0) {
-        setUploadedFiles([newFile]);
-        setLoading(false);
-        return;
-      }
-
-      const existingColumns = Array.from(new Set(uploadedFiles.flatMap(f => f.columns)));
-      const compatibility = analyzeColumnCompatibility(existingColumns, newFile.columns);
-
-      if (compatibility.isFullMatch) {
-        setUploadedFiles(currentFiles => [...currentFiles, newFile]);
-      } else if (compatibility.hasCommon) {
-        Modal.confirm({
-          title: '⚠️ Merge Files with Different Columns?',
-          content: `The new file "${newFile.name}" has different columns. Merging will create empty cells for missing data.`,
-          okText: 'Merge Anyway',
-          cancelText: 'Cancel Upload',
-          onOk: () => {
-            setUploadedFiles(currentFiles => [...currentFiles, newFile]);
-            Modal.success({
-              title: 'File Added',
-              content: `${newFile.name} has been added and will be merged.`,
-            });
-          },
-          onCancel: () => {
-            Modal.info({
-              title: 'Upload Cancelled',
-              content: `The file "${newFile.name}" was not added.`,
-            });
-          },
-        });
-      } else {
-        Modal.confirm({
-          title: '🚨 Replace Existing Data?',
-          content: `The new file "${newFile.name}" has no columns in common with the existing data. Do you want to replace all current files with this new one?`,
-          okText: 'Replace All',
-          cancelText: 'Keep Existing',
-          onOk: () => {
-            setUploadedFiles([newFile]);
-            Modal.success({
-              title: 'Files Replaced',
-              content: `All previous files have been removed. Now using: ${newFile.name}`,
-            });
-          },
-          onCancel: () => {
-            Modal.info({
-              title: 'New File Ignored',
-              content: 'Your current files remain unchanged.',
-            });
-          },
-        });
-      }
+      console.log('Created newFile object:', newFile);
+      return newFile;
     } catch (error) {
+      console.error('Upload error:', error);
       Modal.error({
         title: 'Upload Error',
-        content: `Failed to upload or process file "${file.name}". Please try again.`,
+        content: `Failed to upload file "${file.name}". Error: ${error instanceof Error ? error.message : String(error)}`,
       });
-    } finally {
       setLoading(false);
+      return null;
+    }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    // Check if there's already an uploaded file
+    if (uploadedFile) {
+      Modal.confirm({
+        title: '🔄 Replace Existing File?',
+        content: (
+          <div>
+            <p>You already have <strong>{uploadedFile.name}</strong> uploaded.</p>
+            <p>Do you want to replace it with <strong>{file.name}</strong>?</p>
+            <div style={{
+              background: '#f0f8ff',
+              padding: '8px',
+              borderRadius: '4px',
+              fontSize: '12px',
+              marginTop: '12px'
+            }}>
+              💡 This will remove the current file and all processing results
+            </div>
+          </div>
+        ),
+        okText: '✅ Replace File',
+        cancelText: '❌ Keep Current',
+        width: 450,
+        onOk: async () => {
+          const newFile = await processFileUpload(file);
+          if (newFile) {
+            setUploadedFile(newFile);
+            setProcessResults(null); // Clear previous results
+            setCurrentStep(1); // Auto-navigate to preview
+            setLoading(false);
+            Modal.success({
+              title: '🎉 File Replaced Successfully',
+              content: `${newFile.name} has been uploaded with ${newFile.rowCount} rows and ${newFile.columns.length} columns.`,
+            });
+          }
+        },
+        onCancel: () => {
+          setLoading(false);
+          Modal.info({
+            title: '📁 Upload Cancelled',
+            content: `Keeping current file: ${uploadedFile.name}`,
+          });
+        },
+      });
+    } else {
+      // No existing file, proceed with upload
+      const newFile = await processFileUpload(file);
+      if (newFile) {
+        setUploadedFile(newFile);
+        setLoading(false);
+
+        // Show success message and auto-navigate quickly
+        const modal = Modal.success({
+          title: '✅ File Uploaded Successfully',
+          content: `${newFile.name} has been uploaded with ${newFile.rowCount} rows and ${newFile.columns.length} columns. Redirecting to preview...`,
+        });
+
+        // Auto close modal and navigate to preview
+        setTimeout(() => {
+          modal.destroy();
+          setCurrentStep(1);
+        }, 1500);
+      }
     }
   };
 
@@ -241,8 +209,8 @@ const DataProcessing: React.FC = () => {
         throw new Error(patternData.error);
       }
 
-      // Smart merge all files data
-      const mergedData = mergeAllFilesData(uploadedFiles);
+      // Get single file data
+      const fileData = getFileData();
 
       const processResponse = await fetch('http://localhost:8000/api/process-data/', {
         method: 'POST',
@@ -250,7 +218,7 @@ const DataProcessing: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          data: mergedData,
+          data: fileData,
           pattern: patternData.pattern,
           replacement: values.replacement,
           apply_to_all_columns: true,
@@ -286,112 +254,39 @@ const DataProcessing: React.FC = () => {
         return (
           <div>
             <Card className="glass-card">
-              <Title level={3}>📁 Upload Your Data Files</Title>
+              <Title level={3} style={{ marginBottom: 16 }}>📁 Upload Your Data File</Title>
               <Dragger
                 name="file"
-                multiple={true}
+                multiple={false}
                 accept=".csv,.xlsx,.xls,.json,.txt,.tsv"
-                beforeUpload={(file, fileList) => {
-                  console.log('Uploading file:', file.name, 'Total files:', fileList.length);
+                beforeUpload={(file) => {
+                  console.log('beforeUpload triggered:', file.name);
                   handleFileUpload(file);
                   return false; // Prevent default upload
                 }}
                 showUploadList={false}
+                onChange={(info) => {
+                  console.log('onChange triggered:', info.file.name, info.file.status);
+                }}
                 onDrop={(e) => {
-                  console.log('Files dropped:', e.dataTransfer.files.length);
+                  console.log('onDrop triggered: Files dropped:', e.dataTransfer.files.length);
+                }}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  border: '2px dashed #667eea',
+                  borderRadius: '8px'
                 }}
               >
                 <p className="ant-upload-drag-icon">
                   <InboxOutlined style={{ fontSize: '48px', color: '#667eea' }} />
                 </p>
-                <p className="ant-upload-text">Click or drag files to this area to upload</p>
+                <p className="ant-upload-text">Click or drag a file to this area to upload</p>
                 <p className="ant-upload-hint">
-                  Support for multiple CSV, Excel, JSON, TXT, TSV files (Max: 10MB each)
+                  Supports CSV, Excel, JSON, TXT, TSV files (Max: 10MB). After upload, you'll be taken to preview the data.
                 </p>
               </Dragger>
             </Card>
 
-            {uploadedFiles.length > 0 && (
-              <Card className="glass-card" style={{ marginTop: 24 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <Title level={4} style={{ margin: 0 }}>📋 Uploaded Files ({uploadedFiles.length})</Title>
-                  <Button type="primary" onClick={() => setCurrentStep(1)} disabled={uploadedFiles.length === 0}>
-                    Preview Data →
-                  </Button>
-                </div>
-
-                <div>
-                  {uploadedFiles.map((file, index) => (
-                    <div key={index} style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '12px 16px',
-                      border: '1px solid #d9d9d9',
-                      borderRadius: '8px',
-                      marginBottom: '8px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.8)'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <FileTextOutlined style={{ color: '#1890ff', fontSize: '18px' }} />
-                        <div>
-                          <div style={{ fontWeight: 'bold' }}>{file.name}</div>
-                          <div style={{ fontSize: '12px', color: '#666' }}>
-                            <Tag color="blue">{file.rowCount} rows</Tag>
-                            <Tag color="green">{file.columns.length} columns</Tag>
-                          </div>
-                        </div>
-                      </div>
-                      <Button
-                        size="small"
-                        danger
-                        onClick={() => {
-                          const newFiles = uploadedFiles.filter((_, i) => i !== index);
-                          setUploadedFiles(newFiles);
-                        }}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-
-                <div style={{ marginTop: 16, padding: '12px', backgroundColor: 'rgba(102, 126, 234, 0.1)', borderRadius: '6px', textAlign: 'center' }}>
-                  <Text type="secondary">
-                    💡 Continue dragging files above to add more, or use the button below
-                  </Text>
-                  <br />
-                  <Button
-                    type="dashed"
-                    style={{ marginTop: 8 }}
-                    icon={<InboxOutlined />}
-                    onClick={() => {
-                      // This simulates a click on a hidden file input element
-                      const input = document.createElement('input');
-                      input.type = 'file';
-                      input.multiple = true;
-                      input.accept = '.csv,.xlsx,.xls,.json,.txt,.tsv';
-                      input.style.display = 'none';
-
-                      input.onchange = (e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const files = target.files;
-                        if (files) {
-                          Array.from(files).forEach(file => handleFileUpload(file));
-                        }
-                        // Clean up the input element after use
-                        document.body.removeChild(input);
-                      };
-
-                      document.body.appendChild(input);
-                      input.click();
-                    }}
-                  >
-                    📁 Add More Files
-                  </Button>
-                </div>
-              </Card>
-            )}
           </div>
         );
 
@@ -401,25 +296,28 @@ const DataProcessing: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <Title level={3} style={{ margin: 0 }}>👁 Preview Uploaded Data</Title>
               <Button
-                onClick={() => setCurrentStep(0)}
+                onClick={() => {
+                  setCurrentStep(0);
+                  setUploadedFile(null); // Clear uploaded file when going back
+                }}
                 icon={<FileTextOutlined />}
               >
                 Back to Upload
               </Button>
             </div>
 
-            {uploadedFiles.map((file, index) => (
-              <div key={index} style={{ marginBottom: 24 }}>
+            {uploadedFile && (
+              <div style={{ marginBottom: 24 }}>
                 <Space style={{ marginBottom: 16 }}>
                   <FileTextOutlined />
-                  <Text strong>{file.name}</Text>
-                  <Tag color="blue">{file.rowCount} rows</Tag>
-                  <Tag color="green">{file.columns.length} columns</Tag>
+                  <Text strong>{uploadedFile.name}</Text>
+                  <Tag color="blue">{uploadedFile.rowCount} rows</Tag>
+                  <Tag color="green">{uploadedFile.columns.length} columns</Tag>
                 </Space>
 
                 <Table
-                  dataSource={file.data.slice(0, 5)}
-                  columns={file.columns.map(col => ({
+                  dataSource={uploadedFile.data.slice(0, 5)}
+                  columns={uploadedFile.columns.map(col => ({
                     title: col,
                     dataIndex: col,
                     key: col,
@@ -430,18 +328,19 @@ const DataProcessing: React.FC = () => {
                   scroll={{ x: true }}
                 />
 
-                {file.data.length > 5 && (
+                {uploadedFile.data.length > 5 && (
                   <Text type="secondary" style={{ display: 'block', textAlign: 'center', marginTop: 8 }}>
-                    ... and {file.data.length - 5} more rows
+                    ... and {uploadedFile.data.length - 5} more rows
                   </Text>
                 )}
               </div>
-            ))}
+            )}
 
             <Button
               type="primary"
               onClick={() => setCurrentStep(2)}
               style={{ marginTop: 16 }}
+              disabled={!uploadedFile}
             >
               Continue to Pattern Configuration
             </Button>
@@ -461,18 +360,20 @@ const DataProcessing: React.FC = () => {
               </Button>
             </div>
 
-            <Alert
-              message="Available Columns"
-              description={
-                <Space wrap>
-                  {Array.from(new Set(uploadedFiles.flatMap(f => f.columns))).map(col => (
-                    <Tag key={col} color="blue">{col}</Tag>
-                  ))}
-                </Space>
-              }
-              type="info"
-              style={{ marginBottom: 24 }}
-            />
+            {uploadedFile && (
+              <Alert
+                message="Available Columns"
+                description={
+                  <Space wrap>
+                    {uploadedFile.columns.map(col => (
+                      <Tag key={col} color="blue">{col}</Tag>
+                    ))}
+                  </Space>
+                }
+                type="info"
+                style={{ marginBottom: 24 }}
+              />
+            )}
 
             <Form
               form={form}
@@ -526,7 +427,7 @@ const DataProcessing: React.FC = () => {
             {processResults && (
               <div>
                 <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-                  <Col xs={24} sm={6}>
+                  <Col xs={24} sm={8}>
                     <Card size="small">
                       <div style={{ textAlign: 'center' }}>
                         <Text type="secondary">Matches Found</Text>
@@ -536,7 +437,7 @@ const DataProcessing: React.FC = () => {
                       </div>
                     </Card>
                   </Col>
-                  <Col xs={24} sm={6}>
+                  <Col xs={24} sm={8}>
                     <Card size="small">
                       <div style={{ textAlign: 'center' }}>
                         <Text type="secondary">Rows Affected</Text>
@@ -546,22 +447,12 @@ const DataProcessing: React.FC = () => {
                       </div>
                     </Card>
                   </Col>
-                  <Col xs={24} sm={6}>
+                  <Col xs={24} sm={8}>
                     <Card size="small">
                       <div style={{ textAlign: 'center' }}>
                         <Text type="secondary">Total Rows</Text>
                         <div style={{ fontSize: '24px', color: '#1890ff', fontWeight: 'bold' }}>
                           {processResults?.total_rows ?? 0}
-                        </div>
-                      </div>
-                    </Card>
-                  </Col>
-                  <Col xs={24} sm={6}>
-                    <Card size="small">
-                      <div style={{ textAlign: 'center' }}>
-                        <Text type="secondary">Success Rate</Text>
-                        <div style={{ fontSize: '24px', color: '#722ed1', fontWeight: 'bold' }}>
-                          {Math.round(((processResults?.affected_rows ?? 0) / (processResults?.total_rows ?? 1)) * 100)}%
                         </div>
                       </div>
                     </Card>
@@ -594,7 +485,7 @@ const DataProcessing: React.FC = () => {
                           key: col,
                           ellipsis: true,
                           render: (text, record, index) => {
-                            const originalData = uploadedFiles.flatMap(f => f.data)[index];
+                            const originalData = uploadedFile?.data[index];
                             const isModified = originalData && originalData[col] !== text;
                             return (
                               <span style={isModified ? {
@@ -619,7 +510,7 @@ const DataProcessing: React.FC = () => {
                 <Button
                   onClick={() => {
                     setCurrentStep(0);
-                    setUploadedFiles([]);
+                    setUploadedFile(null);
                     setProcessResults(null);
                     form.resetFields();
                   }}
